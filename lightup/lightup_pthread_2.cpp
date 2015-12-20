@@ -32,7 +32,7 @@ void Video() {
 	// Setup video capture device
 	// Link it to the first capture device
 	VideoCapture captureVideo;
-	captureVideo.open("D:/videoLarge.mp4");
+	captureVideo.open("videoLarge.mp4");
 
 	while (true) {
 		frameFromVideos.push_back(Mat());
