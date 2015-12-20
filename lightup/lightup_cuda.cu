@@ -15,13 +15,17 @@ using namespace cv;
 
 
 
-__global__ void blue(unsigned char *mat, int height, int width)
+__global__ void blue(int *mat, int height, int width)
 {
 	int i = blockIdx.x * 32 + threadIdx.x
-		, j = blockIdx.y * 32 + threadIdx.y;
+		, j = blockIdx.y * 32 + threadIdx.y
+		, k;
 	if (i < height && j < width)
-		for (int k = 0; k < 100; k++)
-			mat[i * width + j] = min(mat[i * width + j] * 2 + 5, 255);
+		for (int k = 0; k < ((i + j) >> 7); k++)
+		{
+			int &mi = mat[i * width + j];
+			mi = mi + (mi >> 3);
+		}
 }
 
 
@@ -36,7 +40,7 @@ void Video() {
 	Mat frameFromVideo;
 	clock_t cnt = 0, cnt_io = 0;
 
-	unsigned char *hmat, *dmat = NULL;
+	int *hmat, *dmat = NULL;
 
 	while (true){
 		captureVideo >> frameFromVideo;
@@ -46,9 +50,10 @@ void Video() {
 		clock_t last = clock();
 		
 		clock_t last_io = clock();
+
 		int rows = frameFromVideo.rows, cols = frameFromVideo.cols;
-		int size = rows * cols * sizeof(unsigned char);
-		hmat = (unsigned char *)malloc(size);
+		int size = rows * cols * sizeof(int);
+		hmat = (int *)malloc(size);
 		for (i = 0; i < rows; i++)
 			for (j = 0; j < cols; j++)
 				hmat[i * cols + j] = frameFromVideo.at<Vec3b>(i, j)[0];
@@ -70,9 +75,21 @@ void Video() {
 			exit(EXIT_FAILURE);
 		}
 
+		// getting max value
+		int max_val = 0;
+		for (i = 0; i < rows; i++)
+			for (j = 0; j < cols; j++) {
+				if (hmat[i * cols + j] > max_val)
+					max_val = hmat[i * cols + j];
+			}
+
 		for (i = 0; i < rows; i++)
 			for (j = 0; j < cols; j++)
-				frameFromVideo.at<Vec3b>(i, j)[0] = hmat[i * cols + j];
+				frameFromVideo.at<Vec3b>(i, j)[0] = hmat[i * cols + j] * 255 / max_val;
+
+		cudaFree(dmat);
+		free(hmat);
+
 		cnt_io += clock() - last_io;
 
 		cnt += clock() - last;
