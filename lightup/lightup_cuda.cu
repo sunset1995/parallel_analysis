@@ -18,8 +18,7 @@ using namespace cv;
 __global__ void blue(int *mat, int height, int width)
 {
 	int i = blockIdx.x * 32 + threadIdx.x
-		, j = blockIdx.y * 32 + threadIdx.y
-		, k;
+		, j = blockIdx.y * 32 + threadIdx.y;
 	if (i < height && j < width)
 		for (int k = 0; k < ((i + j) >> 7); k++)
 		{
@@ -83,6 +82,7 @@ void Video() {
 					max_val = hmat[i * cols + j];
 			}
 
+		// normalizing
 		for (i = 0; i < rows; i++)
 			for (j = 0; j < cols; j++)
 				frameFromVideo.at<Vec3b>(i, j)[0] = hmat[i * cols + j] * 255 / max_val;
