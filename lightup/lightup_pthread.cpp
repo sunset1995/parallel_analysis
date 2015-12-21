@@ -53,7 +53,6 @@ void Video() {
 			threads.emplace_back(thread(lightUp, i));
 		for (int i = 0; i<threadNum; ++i)
 			threads[i].join();
-		cnt += clock() - last;
 		
 
 		// getting max value
@@ -68,6 +67,8 @@ void Video() {
 		for (int i = 0; i < frameFromVideo.rows; i++)
 			for (int j = 0; j < frameFromVideo.cols; j++)
 				frameFromVideo.at<Vec3b>(i, j)[0] = mat[i][j] / max_val;
+
+		cnt += clock() - last;
 
 		imshow("outputCamera", frameFromVideo);
 
