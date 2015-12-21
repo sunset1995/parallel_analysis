@@ -1,2 +1,8 @@
 *.mp4
 *.avi
+
+# executable file
+*.exe
+lightup_pthread
+lightup_pthread_2
+lightup_sequential
