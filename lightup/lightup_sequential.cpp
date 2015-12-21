@@ -34,12 +34,13 @@ void Video() {
 
 		clock_t last = clock();
 		for (int i = 0; i < frameFromVideo.rows; i++)
-			for (int j = 0; j < frameFromVideo.cols; j++)
-				//for(int k=0; k<3; ++k)
-				mat[i][j] += mat[i][j] >> 3;
+			for (int j = 0; j < frameFromVideo.cols; j++) {
+				int tmp = mat[i][j];
+				for (int k = 0; k < ((i + j) >> 7); ++k)
+					mat[i][j] += mat[i][j] >> 3;
+				mat[i][j] = tmp;
+			}
 				
-
-
 		// getting max value
 		int max_val = 0;
 		for (int i = 0; i < frameFromVideo.rows; i++)
