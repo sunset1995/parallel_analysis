@@ -22,14 +22,15 @@ void Video() {
 		captureVideo >> frameFromVideo;
 		if (frameFromVideo.empty()) break;
 		//imshow("origin", frameFromVideo);
-		if (mat.empty()) {
+		if (mat.empty()) // if it's empty, resize first !
+		{
 			mat.resize(frameFromVideo.rows);
-			for (int i = 0; i < frameFromVideo.rows; ++i) {
+			for (int i = 0; i < frameFromVideo.rows; ++i)
 				mat[i].resize(frameFromVideo.cols);
-				for (int j = 0; j < frameFromVideo.cols; ++j)
-					mat[i][j] = frameFromVideo.at<Vec3b>(i, j)[0];
-			}
 		}
+		for (int i = 0; i < frameFromVideo.rows; ++i)
+			for (int j = 0; j < frameFromVideo.cols; ++j)
+				mat[i][j] = frameFromVideo.at<Vec3b>(i, j)[0];
 
 		clock_t last = clock();
 		for (int i = 0; i < frameFromVideo.rows; i++)
