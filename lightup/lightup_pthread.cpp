@@ -19,9 +19,12 @@ void lightUp(int tid) {
 	int from = tid * threadPerNum;
 	int to = (tid == threadNum - 1) ? frameFromVideo.rows : from + threadPerNum;
 	for (int i = from; i < to; ++i)
-		for (int j = 0; j < frameFromVideo.cols; ++j)
+		for (int j = 0; j < frameFromVideo.cols; ++j) {
+			int tmp = mat[i][j];
 			for (int k = 0; k < ((i + j) >> 7); ++k)
-				mat[i][j] += mat[i][j] >> 3;
+				tmp += tmp >> 3;
+			mat[i][j] = tmp;
+		}
 }
 
 void Video() {
