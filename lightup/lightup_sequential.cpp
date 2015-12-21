@@ -37,7 +37,7 @@ void Video() {
 			for (int j = 0; j < frameFromVideo.cols; j++) {
 				int tmp = mat[i][j];
 				for (int k = 0; k < ((i + j) >> 7); ++k)
-					mat[i][j] += mat[i][j] >> 3;
+					tmp += tmp >> 3;
 				mat[i][j] = tmp;
 			}
 				
@@ -52,10 +52,10 @@ void Video() {
 		// normalizing
 		for (int i = 0; i < frameFromVideo.rows; i++)
 			for (int j = 0; j < frameFromVideo.cols; j++)
-				frameFromVideo.at<Vec3b>(i, j)[0] = mat[i][j] / max_val;
+				frameFromVideo.at<Vec3b>(i, j)[0] = mat[i][j] * 255 / max_val;
 		
 		cnt += clock() - last;
-		imshow("outputCamera", frameFromVideo);
+		//imshow("outputCamera", frameFromVideo);
 
 		if (waitKey(30) >= 0) break;
 	}
