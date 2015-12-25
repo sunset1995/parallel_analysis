@@ -13,9 +13,6 @@ struct BGR {
 	int b, g, r;
 	BGR(int b,int g,int r)
 	:b(b), g(g), r(r) {}
-	bool operator < (const BGR &rth) const {
-		return b+g+r > rth.b+rth.g+rth.r;
-	}
 };
 
 int main(int argc, const char** argv){
