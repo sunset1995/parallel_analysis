@@ -2,6 +2,7 @@
 *.avi
 *.jpg
 *.jpeg
+*.png
 
 # executable file
 *.exe
@@ -9,3 +10,4 @@ lightup_pthread
 lightup_pthread_2
 lightup_sequential
 white_balance_sequential
+gray_world_algorithm
