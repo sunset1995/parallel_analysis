@@ -11,3 +11,7 @@ lightup_pthread_2
 lightup_sequential
 white_balance_sequential
 gray_world_algorithm
+gray_world_openmp
+gray_world_pthread
+video_openmp
+video_sequential
