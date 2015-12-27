@@ -17,3 +17,4 @@ video_openmp
 video_sequential
 IO_test
 video_pthread_TDM
+video_openmp_TDM
