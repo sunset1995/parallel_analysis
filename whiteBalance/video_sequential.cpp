@@ -7,10 +7,30 @@
 #include <ctime>
 
 #define SHOW_INFO false
-#define SHOW_VIDEO false
+#define OUTPUT_VIDEO false
 
 using namespace std;
 using namespace cv;
+
+VideoWriter setOutput(const VideoCapture &input) {
+	// Reference from
+	// http://docs.opencv.org/2.4/doc/tutorials/highgui/video-write/video-write.html
+
+	// Acquire input size
+	Size S = Size((int) input.get(CV_CAP_PROP_FRAME_WIDTH),
+				  (int) input.get(CV_CAP_PROP_FRAME_HEIGHT));
+
+	 // Get Codec Type- Int form
+	int ex = static_cast<int>(input.get(CV_CAP_PROP_FOURCC));
+
+	VideoWriter output;
+	output.open("outputVideo.avi", ex, input.get(CV_CAP_PROP_FPS), S, true);
+
+    return output;
+}
+
+// Setup video output
+VideoWriter outputVideo;
 
 struct BGR {
 	int b, g, r;
@@ -24,15 +44,22 @@ void whiteBalance(Mat &img) {
 	int cols = img.cols;
 	int picSz = rows * cols;
 
+	if( img.isContinuous() ) {
+		cols *= rows;
+		rows = 1;
+	}
+
 	int bSum=0, gSum=0, rSum=0;
 	int avg[3], base;
 	
-	for(int i=0; i<rows; ++i)
+	for(int i=0; i<rows; ++i) {
+		Vec3b *p = img.ptr<Vec3b>(i);
 		for(int j=0; j<cols; ++j) {
-			bSum += img.at<Vec3b>(i,j)[0];
-			gSum += img.at<Vec3b>(i,j)[1];
-			rSum += img.at<Vec3b>(i,j)[2];
+			bSum += p[j][0];
+			gSum += p[j][1];
+			rSum += p[j][2];
 		}
+	}
 
 	avg[0] = bSum / picSz;
 	avg[1] = gSum / picSz;
@@ -43,16 +70,22 @@ void whiteBalance(Mat &img) {
 
 	base = avg[1];
 
+	int tableB[256], tableG[256], tableR[256];
+	for(int i=0; i<255; ++i) {
+		tableB[i] = min(255, base * i / avg[0]);
+		tableG[i] = min(255, base * i / avg[1]);
+		tableR[i] = min(255, base * i / avg[2]);
+	}
+
 	// let gAvg = bAvg = rAvg
-	for(int i=0; i<rows; ++i)
+	for(int i=0; i<rows; ++i) {
+		Vec3b *p = img.ptr<Vec3b>(i);
 		for(int j=0; j<cols; ++j) {
-			img.at<Vec3b>(i,j)[0] = min(255, 
-				(int)(base * img.at<Vec3b>(i,j)[0] / avg[0]));
-			img.at<Vec3b>(i,j)[1] = min(255, 
-				(int)(base * img.at<Vec3b>(i,j)[1] / avg[1]));
-			img.at<Vec3b>(i,j)[2] = min(255,
-				(int)(base * img.at<Vec3b>(i,j)[2] / avg[2]));
+			p[j][0] = tableB[ p[j][0] ];
+			p[j][1] = tableG[ p[j][1] ];
+			p[j][2] = tableR[ p[j][2] ];
 		}
+	}
 }
 
 int main(int argc, const char** argv){
@@ -70,20 +103,36 @@ int main(int argc, const char** argv){
 		return 0;
 	}
 
-	clock_t cnt = clock();
+	if( OUTPUT_VIDEO )
+		outputVideo = setOutput(captureVideo);
+
+	clock_t Calculate=0, Input=0, Output=0;
+	clock_t Total = clock(), Last;
 
 	Mat img;
 	while( true ) {
+		Last = clock();
 		captureVideo >> img;
 		if (img.empty()) break;
-		if( SHOW_VIDEO ) imshow("origin", img);
+		Input += clock() - Last;
+
+		Last = clock();
 		whiteBalance(img);
-		if( SHOW_VIDEO ) imshow("video", img);
-		if( waitKey(30)>=0 ) break;
+		Calculate += clock() - Last;
+
+		if( OUTPUT_VIDEO ) {
+			Last = clock();
+			outputVideo << img;
+			Output += clock() - Last;
+		}
 	}
 
-	cnt += clock() - cnt;
-	printf("%fms\n", 1.0*cnt / (1.0*CLOCKS_PER_SEC / 1000.0));
+	Total = clock() - Total;
+
+	printf("    Total: %fms (include time count)\n", 1.0*Total / (1.0*CLOCKS_PER_SEC / 1000.0));
+	printf("    Input: %fms\n", 1.0*Input / (1.0*CLOCKS_PER_SEC / 1000.0));
+	printf("   Output: %fms\n", 1.0*Output / (1.0*CLOCKS_PER_SEC / 1000.0));
+	printf("Calculate: %fms\n", 1.0*Calculate / (1.0*CLOCKS_PER_SEC / 1000.0));
 
 	return 0;
 }

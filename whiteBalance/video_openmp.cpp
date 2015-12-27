@@ -9,9 +9,27 @@
 
 #define SHOW_INFO false
 #define SHOW_VIDEO false
+#define OUTPUT_VIDEO true
 
 using namespace std;
 using namespace cv;
+
+VideoWriter setOutput(const VideoCapture &input) {
+	// Reference from
+	// http://docs.opencv.org/2.4/doc/tutorials/highgui/video-write/video-write.html
+
+	// Acquire input size
+	Size S = Size((int) input.get(CV_CAP_PROP_FRAME_WIDTH),
+				  (int) input.get(CV_CAP_PROP_FRAME_HEIGHT));
+
+	 // Get Codec Type- Int form
+	int ex = static_cast<int>(input.get(CV_CAP_PROP_FOURCC));
+
+	VideoWriter output;
+	output.open("outputVideo.avi", ex, input.get(CV_CAP_PROP_FPS), S, true);
+
+    return output;
+}
 
 struct BGR {
 	int b, g, r;
@@ -86,24 +104,42 @@ int main(int argc, const char** argv){
 		return 0;
 	}
 
+	// Setup video output
+	VideoWriter outputVideo;
+	if( OUTPUT_VIDEO )
+		outputVideo = setOutput(captureVideo);
+
 	threadNum = atoi(argv[2]);
 	if( SHOW_INFO )
 		printf("threads: %d\n", threadNum);
 
-	clock_t cnt = clock();
+	clock_t Coculate=0, Input=0, Output=0;
+	clock_t Total = clock(), Last;
 
 	Mat img;
 	while( true ) {
+		Last = clock();
 		captureVideo >> img;
 		if (img.empty()) break;
-		if( SHOW_VIDEO ) imshow("origin", img);
+		Input += clock() - Last;
+
+		Last = clock();
 		whiteBalance(img);
-		if( SHOW_VIDEO ) imshow("video", img);
-		if( waitKey(30)>=0 ) break;
+		Coculate += clock() - Last;
+
+		if( OUTPUT_VIDEO ) {
+			Last = clock();
+			outputVideo << img;
+			Output += clock() - Last;
+		}
 	}
 
-	cnt += clock() - cnt;
-	printf("%fms\n", 1.0*cnt / (1.0*CLOCKS_PER_SEC / 1000.0));
+	Total = clock() - Total;
+
+	printf("    Total: %fms (include time count)\n", 1.0*Total / (1.0*CLOCKS_PER_SEC / 1000.0));
+	printf("    Input: %fms\n", 1.0*Input / (1.0*CLOCKS_PER_SEC / 1000.0));
+	printf("   Output: %fms\n", 1.0*Output / (1.0*CLOCKS_PER_SEC / 1000.0));
+	printf("Calculate: %fms\n", 1.0*Coculate / (1.0*CLOCKS_PER_SEC / 1000.0));
 
 	return 0;
 }
