@@ -15,3 +15,4 @@ gray_world_openmp
 gray_world_pthread
 video_openmp
 video_sequential
+IO_test
