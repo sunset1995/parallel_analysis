@@ -34,6 +34,8 @@ VideoWriter setOutput(const VideoCapture &input) {
 
 void whiteBalance(Mat &img) {
 
+	if( img.empty() ) return;
+
 	int rows = img.rows;
 	int cols = img.cols;
 	int picSz = rows * cols;
@@ -95,7 +97,8 @@ int main(int argc, const char** argv){
 		return 0;
 	}
 
-	VideoCapture captureVideo(argv[1]);
+	VideoCapture captureVideo;
+	captureVideo.open(argv[1]);
 	if( !captureVideo.isOpened() ) {
 		puts("Fail to open video");
 		return 0;
@@ -114,25 +117,26 @@ int main(int argc, const char** argv){
 	double Total = getTickCount(), Last;
 
 	Mat imgs[TD_MAX_SIZE];
-	while( true ) {
+
+	int numFrames = captureVideo.get(CV_CAP_PROP_FRAME_COUNT);
+	for(int fid=0; fid<numFrames; fid+=TD_MAX_SIZE) {
+	
+		int sz = numFrames - fid;
+		if( sz > TD_MAX_SIZE ) sz = TD_MAX_SIZE;
+
 		// input enough frames
-		int sz;
 		Last = getTickCount();
-		for(sz=0; sz<TD_MAX_SIZE; ++sz) {
-			captureVideo >> imgs[sz];
-			if (imgs[sz].empty()) break;
-		}
-		if( imgs[0].empty() ) break;
+		for(int i=0; i<sz; ++i)
+			captureVideo >> imgs[i];
 		Input += getTickCount() - Last;
+
 
 		// proc all got frames
 		Last = getTickCount();
-
 		omp_set_num_threads(threadNum);
 		#pragma omp parallel for
 		for(int i=0; i<sz; ++i)
 			whiteBalance(imgs[i]);
-
 		Calculate += getTickCount() - Last;
 
 		if( OUTPUT_VIDEO ) {
