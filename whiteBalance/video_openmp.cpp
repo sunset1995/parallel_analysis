@@ -44,7 +44,12 @@ void whiteBalance(Mat &img) {
 	int rows = img.rows;
 	int cols = img.cols;
 	int picSz = rows * cols;
-
+	
+	if( img.isContinuous() ) {
+		cols *= rows;
+		rows = 1;
+	}
+	
 	int bSum=0, gSum=0, rSum=0;
 	int avg[3], base;
 
@@ -52,36 +57,44 @@ void whiteBalance(Mat &img) {
 	#pragma omp parallel
 	{
 		#pragma omp for reduction(+:bSum,gSum,rSum)
-		for(int i=0; i<rows; ++i)
+		for(int i=0; i<rows; ++i) {
+			Vec3b *p = img.ptr<Vec3b>(i);
 			for(int j=0; j<cols; ++j) {
-				bSum += img.at<Vec3b>(i,j)[0];
-				gSum += img.at<Vec3b>(i,j)[1];
-				rSum += img.at<Vec3b>(i,j)[2];
+				bSum += p[j][0];
+				gSum += p[j][1];
+				rSum += p[j][2];
 			}
+		}
 
 		#pragma omp single
 		{
-		avg[0] = bSum / picSz;
-		avg[1] = gSum / picSz;
-		avg[2] = rSum / picSz;
+			avg[0] = bSum / picSz;
+			avg[1] = gSum / picSz;
+			avg[2] = rSum / picSz;
 
-		if( SHOW_INFO )
-			printf("avg(b, g, r): %d %d %d\n",avg[0], avg[1], avg[2]);
+			if( SHOW_INFO )
+				printf("avg(b, g, r): %d %d %d\n",avg[0], avg[1], avg[2]);
 
-		base = avg[1];
+			base = avg[1];
+
+			int tableB[256], tableG[256], tableR[256];
+			for(int i=0; i<256; ++i) {
+				tableB[i] = min(255, base * i / avg[0]);
+				tableG[i] = min(255, base * i / avg[1]);
+				tableR[i] = min(255, base * i / avg[2]);
+			}
 		}
 
 		// let gAvg = bAvg = rAvg
 		#pragma omp for nowait
-		for(int i=0; i<rows; ++i)
+		for(int i=0; i<rows; ++i) {
+			Vec3b *p = img.ptr<Vec3b>(i);
 			for(int j=0; j<cols; ++j) {
-				img.at<Vec3b>(i,j)[0] = min(255, 
-					(int)(base * img.at<Vec3b>(i,j)[0] / avg[0]));
-				img.at<Vec3b>(i,j)[1] = min(255, 
-					(int)(base * img.at<Vec3b>(i,j)[1] / avg[1]));
-				img.at<Vec3b>(i,j)[2] = min(255,
-					(int)(base * img.at<Vec3b>(i,j)[2] / avg[2]));
+				p[j][0] = tableB[ p[j][0] ];
+				p[j][1] = tableG[ p[j][1] ];
+				p[j][2] = tableR[ p[j][2] ];
 			}
+		}
 	}
 }
 

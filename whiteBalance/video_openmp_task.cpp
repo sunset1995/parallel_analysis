@@ -68,7 +68,7 @@ void whiteBalance(Mat &img) {
 	base = avg[1];
 
 	int tableB[256], tableG[256], tableR[256];
-	for(int i=0; i<255; ++i) {
+	for(int i=0; i<256; ++i) {
 		tableB[i] = min(255, base * i / avg[0]);
 		tableG[i] = min(255, base * i / avg[1]);
 		tableR[i] = min(255, base * i / avg[2]);

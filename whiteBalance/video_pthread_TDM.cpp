@@ -39,21 +39,28 @@ VideoWriter setOutput(const VideoCapture &input) {
 // Setup video output
 void whiteBalance(int rank) {
 
-	int rows = imgs[0].rows;
-	int cols = imgs[0].cols;
-	int picSz = rows * cols;
-
 	for(int id=rank; id<imgs.size()-1; id+=threadNum) {
+
+		int rows = imgs[id].rows;
+		int cols = imgs[id].cols;
+		int picSz = rows * cols;
+
+		if( imgs[id].isContinuous() ) {
+			cols *= rows;
+			rows = 1;
+		}
 
 		int bSum=0, gSum=0, rSum=0;
 		int avg[3], base;
 		
-		for(int i=0; i<rows; ++i)
+		for(int i=0; i<rows; ++i) {
+			Vec3b *p = imgs[id].ptr<Vec3b>(i);
 			for(int j=0; j<cols; ++j) {
-				bSum += imgs[id].at<Vec3b>(i,j)[0];
-				gSum += imgs[id].at<Vec3b>(i,j)[1];
-				rSum += imgs[id].at<Vec3b>(i,j)[2];
+				bSum += p[j][0];
+				gSum += p[j][1];
+				rSum += p[j][2];
 			}
+		}
 
 		avg[0] = bSum / picSz;
 		avg[1] = gSum / picSz;
@@ -64,16 +71,22 @@ void whiteBalance(int rank) {
 
 		base = avg[1];
 
+		int tableB[256], tableG[256], tableR[256];
+		for(int i=0; i<256; ++i) {
+			tableB[i] = min(255, (int)(base * i / avg[0]));
+			tableG[i] = min(255, (int)(base * i / avg[1]));
+			tableR[i] = min(255, (int)(base * i / avg[2]));
+		}
+
 		// let gAvg = bAvg = rAvg
-		for(int i=0; i<rows; ++i)
+		for(int i=0; i<rows; ++i) {
+			Vec3b *p = imgs[id].ptr<Vec3b>(i);
 			for(int j=0; j<cols; ++j) {
-				imgs[id].at<Vec3b>(i,j)[0] = min(255, 
-					(int)(base * imgs[id].at<Vec3b>(i,j)[0] / avg[0]));
-				imgs[id].at<Vec3b>(i,j)[1] = min(255, 
-					(int)(base * imgs[id].at<Vec3b>(i,j)[1] / avg[1]));
-				imgs[id].at<Vec3b>(i,j)[2] = min(255,
-					(int)(base * imgs[id].at<Vec3b>(i,j)[2] / avg[2]));
+				p[j][0] = tableB[ p[j][0] ];
+				p[j][1] = tableG[ p[j][1] ];
+				p[j][2] = tableR[ p[j][2] ];
 			}
+		}
 	}
 }
 

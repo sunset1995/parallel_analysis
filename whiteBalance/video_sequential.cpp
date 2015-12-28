@@ -7,7 +7,7 @@
 #include <ctime>
 
 #define SHOW_INFO false
-#define OUTPUT_VIDEO false
+#define OUTPUT_VIDEO true
 
 using namespace std;
 using namespace cv;
@@ -49,8 +49,8 @@ void whiteBalance(Mat &img) {
 		rows = 1;
 	}
 
-	int bSum=0, gSum=0, rSum=0;
-	int avg[3], base;
+	long long bSum=0, gSum=0, rSum=0;
+	long long avg[3], base;
 	
 	for(int i=0; i<rows; ++i) {
 		Vec3b *p = img.ptr<Vec3b>(i);
@@ -66,15 +66,15 @@ void whiteBalance(Mat &img) {
 	avg[2] = rSum / picSz;
 
 	if( SHOW_INFO )
-		printf("avg(b, g, r): %d %d %d\n",avg[0], avg[1], avg[2]);
+		printf("avg(b, g, r): %lld %lld %lld\n",avg[0], avg[1], avg[2]);
 
 	base = avg[1];
 
 	int tableB[256], tableG[256], tableR[256];
-	for(int i=0; i<255; ++i) {
-		tableB[i] = min(255, base * i / avg[0]);
-		tableG[i] = min(255, base * i / avg[1]);
-		tableR[i] = min(255, base * i / avg[2]);
+	for(int i=0; i<256; ++i) {
+		tableB[i] = min(255, (int)(base * i / avg[0]));
+		tableG[i] = min(255, (int)(base * i / avg[1]));
+		tableR[i] = min(255, (int)(base * i / avg[2]));
 	}
 
 	// let gAvg = bAvg = rAvg
