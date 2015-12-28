@@ -10,7 +10,7 @@
 
 #define SHOW_INFO false
 #define OUTPUT_VIDEO false
-#define TD_MAX_SIZE 200
+#define TD_MAX_SIZE 500
 
 using namespace std;
 using namespace cv;
@@ -27,7 +27,7 @@ VideoWriter setOutput(const VideoCapture &input) {
 	int ex = static_cast<int>(input.get(CV_CAP_PROP_FOURCC));
 
 	VideoWriter output;
-	output.open("outputVideo.avi", ex, input.get(CV_CAP_PROP_FPS), S, true);
+	output.open("outputVideo.avi", CV_FOURCC('P','I','M','1'), input.get(CV_CAP_PROP_FPS), S, true);
 
     return output;
 }
@@ -113,86 +113,41 @@ int main(int argc, const char** argv){
 	if( OUTPUT_VIDEO )
 		outputVideo = setOutput(captureVideo);
 
-	clock_t Calculate=0, Input=0, Output=0;
-	clock_t Total = clock();
-
-	omp_lock_t inputLck[TD_MAX_SIZE];
-	omp_lock_t procLck[TD_MAX_SIZE];
+	double Calculate=0, Input=0, Output=0;
+	double Total = getTickCount();
 
 	Mat imgs[TD_MAX_SIZE];
 	while( true ) {
 
-		for(int i=0; i<TD_MAX_SIZE; ++i) {
-			omp_init_lock(&inputLck[i]);
-			omp_init_lock(&procLck[i]);
-			omp_set_lock(&inputLck[i]);
-			omp_set_lock(&procLck[i]);
-		}
-
 		int sz = TD_MAX_SIZE;
 		omp_set_num_threads(threadNum);
-#		pragma omp parallel sections
+#		pragma omp parallel
 		{
-#			pragma omp section
+#			pragma omp single
 			{
 				int i;
 				for(i=0; i<TD_MAX_SIZE; ++i) {
-					clock_t Last = clock();
+					double Last = getTickCount();
 					captureVideo >> imgs[i];
-					Input += clock() - Last;
+					Input += getTickCount() - Last;
 					if (imgs[i].empty()) break;
-					omp_unset_lock(&inputLck[i]);
+#					pragma omp task firstprivate(i)
+						whiteBalance( imgs[i] );
 				}
 				sz = i;
-				for( ; i<TD_MAX_SIZE; ++i)
-					omp_unset_lock(&inputLck[i]);
 			}
-
-#			pragma omp section
-			{
-				for(int i=0; i<TD_MAX_SIZE; ++i) {
-#					pragma omp task firstprivate(i)
-					{
-						omp_set_lock(&inputLck[i]);
-						if(!imgs[i].empty()) {
-							clock_t Last = clock();
-							whiteBalance(imgs[i]);
-							Calculate += clock() - Last;
-						}
-						omp_unset_lock(&procLck[i]);
-					}
-				}
-			}
-
-#			pragma omp section
-			{
-				if( OUTPUT_VIDEO )
-					for(int i=0; i<TD_MAX_SIZE; ++i) {
-						omp_set_lock(&procLck[i]);
-						if(!imgs[i].empty()) {
-							clock_t Last = clock();
-							outputVideo << imgs[i];
-							Output += clock() - Last;
-						}
-					}
-			}
-		}
-
-		for(int i=0; i<TD_MAX_SIZE; ++i) {
-			omp_destroy_lock(&inputLck[i]);
-			omp_destroy_lock(&procLck[i]);
 		}
 
 		if( imgs[0].empty() || sz!=TD_MAX_SIZE ) break;
 
 	}
 
-	Total = clock() - Total;
+	Total = getTickCount() - Total;
 
-	printf("    Total: %fms (include time count)\n", 1.0*Total / (1.0*CLOCKS_PER_SEC / 1000.0));
-	printf("    Input: %fms\n", 1.0*Input / (1.0*CLOCKS_PER_SEC / 1000.0));
-	printf("   Output: %fms\n", 1.0*Output / (1.0*CLOCKS_PER_SEC / 1000.0));
-	printf("Calculate: %fms\n", 1.0*Calculate / (1.0*CLOCKS_PER_SEC / 1000.0));
+	printf("    Total: %.3fs (include time count)\n", Total / getTickFrequency() );
+	printf("    Input: %.3fs\n", Input / getTickFrequency() );
+	printf("   Output: %.3fs\n", Output / getTickFrequency() );
+	printf("Calculate: %.3fs\n", Calculate / getTickFrequency() );
 
 	return 0;
 }

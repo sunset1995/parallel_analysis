@@ -26,7 +26,7 @@ VideoWriter setOutput(const VideoCapture &input) {
 	int ex = static_cast<int>(input.get(CV_CAP_PROP_FOURCC));
 
 	VideoWriter output;
-	output.open("outputVideo.avi", ex, input.get(CV_CAP_PROP_FPS), S, true);
+	output.open("outputVideo.avi", CV_FOURCC('P','I','M','1'), input.get(CV_CAP_PROP_FPS), S, true);
 
     return output;
 }
@@ -53,6 +53,8 @@ void whiteBalance(Mat &img) {
 	int bSum=0, gSum=0, rSum=0;
 	int avg[3], base;
 
+	int tableB[256], tableG[256], tableR[256];
+
 	omp_set_num_threads(threadNum);
 	#pragma omp parallel
 	{
@@ -77,7 +79,6 @@ void whiteBalance(Mat &img) {
 
 			base = avg[1];
 
-			int tableB[256], tableG[256], tableR[256];
 			for(int i=0; i<256; ++i) {
 				tableB[i] = min(255, base * i / avg[0]);
 				tableG[i] = min(255, base * i / avg[1]);
@@ -126,33 +127,33 @@ int main(int argc, const char** argv){
 	if( SHOW_INFO )
 		printf("threads: %d\n", threadNum);
 
-	clock_t Coculate=0, Input=0, Output=0;
-	clock_t Total = clock(), Last;
+	double Calculate=0, Input=0, Output=0;
+	double Total = getTickCount(), Last;
 
 	Mat img;
 	while( true ) {
-		Last = clock();
+		Last = getTickCount();
 		captureVideo >> img;
 		if (img.empty()) break;
-		Input += clock() - Last;
+		Input += getTickCount() - Last;
 
-		Last = clock();
+		Last = getTickCount();
 		whiteBalance(img);
-		Coculate += clock() - Last;
+		Calculate += getTickCount() - Last;
 
 		if( OUTPUT_VIDEO ) {
-			Last = clock();
+			Last = getTickCount();
 			outputVideo << img;
-			Output += clock() - Last;
+			Output += getTickCount() - Last;
 		}
 	}
 
-	Total = clock() - Total;
-
-	printf("    Total: %fms (include time count)\n", 1.0*Total / (1.0*CLOCKS_PER_SEC / 1000.0));
-	printf("    Input: %fms\n", 1.0*Input / (1.0*CLOCKS_PER_SEC / 1000.0));
-	printf("   Output: %fms\n", 1.0*Output / (1.0*CLOCKS_PER_SEC / 1000.0));
-	printf("Calculate: %fms\n", 1.0*Coculate / (1.0*CLOCKS_PER_SEC / 1000.0));
+	Total = getTickCount() - Total;
+	
+	printf("    Total: %.3fs (include time count)\n", Total / getTickFrequency() );
+	printf("    Input: %.3fs\n", Input / getTickFrequency() );
+	printf("   Output: %.3fs\n", Output / getTickFrequency() );
+	printf("Calculate: %.3fs\n", Calculate / getTickFrequency() );
 
 	return 0;
 }
