@@ -17,7 +17,7 @@ using namespace cv;
 
 int threadNum;
 int sz;
-vector<Mat> imgs;
+Mat imgs[TD_MAX_SIZE];
 
 VideoWriter setOutput(const VideoCapture &input) {
 	// Reference from
@@ -31,15 +31,15 @@ VideoWriter setOutput(const VideoCapture &input) {
 	int ex = static_cast<int>(input.get(CV_CAP_PROP_FOURCC));
 
 	VideoWriter output;
-	output.open("outputVideo.avi", CV_FOURCC('P', 'I', 'M', '1'), input.get(CV_CAP_PROP_FPS), S, true);
+	output.open("outputVideo.avi", CV_FOURCC('H', 'F', 'Y', 'U'), input.get(CV_CAP_PROP_FPS), S, true);
 
 	return output;
 }
 
 // Setup video output
-void whiteBalance(int rank) {
+void whiteBalance(int rank, int sz) {
 
-	for (int id = rank; id<imgs.size() - 1; id += threadNum) {
+	for (int id = rank; id < sz; id += threadNum) {
 
 		int rows = imgs[id].rows;
 		int cols = imgs[id].cols;
@@ -90,6 +90,17 @@ void whiteBalance(int rank) {
 	}
 }
 
+void inputVideo(const char *filePath, int rank, int sz, int fid) {
+	int numPerThread = sz / threadNum;
+	int from = rank * numPerThread;
+	int to = (rank==threadNum-1)? sz : from + numPerThread;
+	VideoCapture cpVideo(filePath);
+	cpVideo.set(CV_CAP_PROP_POS_FRAMES, fid+from);
+
+	for (int i=from; i<to; ++i)
+		cpVideo >> imgs[i];
+}
+
 int main(int argc, const char** argv){
 	if (CV_MAJOR_VERSION < 3) {
 		puts("Advise you update to OpenCV3");
@@ -122,33 +133,42 @@ int main(int argc, const char** argv){
 	double Calculate = 0, Input = 0, Output = 0;
 	double Total = getTickCount(), Last;
 
-	while (true) {
+
+	int numFrames = captureVideo.get(CV_CAP_PROP_FRAME_COUNT);
+	for (int fid = 0; fid<numFrames; fid += TD_MAX_SIZE) {
+
+		int sz = numFrames - fid;
+		if (sz > TD_MAX_SIZE) sz = TD_MAX_SIZE;
+
+		// store all thread
+		vector<thread> threads;
+
 		// input enough frames
 		Last = getTickCount();
-		for (int i = 0; i<TD_MAX_SIZE; ++i) {
-			imgs.push_back(Mat());
-			captureVideo >> imgs.back();
-			if (imgs.back().empty()) break;
-		}
-		if (imgs[0].empty()) break;
+		for (int i = 0; i<threadNum; ++i)
+			threads.emplace_back(thread(inputVideo, argv[1], i, sz, fid));
+		for (int i = 0; i<threadNum; ++i)
+			threads[i].join();
+		threads.clear();
 		Input += getTickCount() - Last;
 
 		// proc all got frames
 		Last = getTickCount();
-		vector<thread> threads;
 		for (int i = 0; i<threadNum; ++i)
-			threads.emplace_back(thread(whiteBalance, i));
+			threads.emplace_back(thread(whiteBalance, i, sz));
 		for (int i = 0; i<threadNum; ++i)
 			threads[i].join();
+		threads.clear();
 		Calculate += getTickCount() - Last;
 
 		if (OUTPUT_VIDEO) {
 			Last = getTickCount();
-			for (int i = 0; i<imgs.size() - 1; ++i)
+			for (int i = 0; i<sz; ++i) {
 				outputVideo << imgs[i];
+				imgs[i].release();
+			}
 			Output += getTickCount() - Last;
 		}
-		imgs.clear();
 	}
 
 	Total = getTickCount() - Total;

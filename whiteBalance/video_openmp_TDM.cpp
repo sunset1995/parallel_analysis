@@ -126,8 +126,19 @@ int main(int argc, const char** argv){
 
 		// input enough frames
 		Last = getTickCount();
-		for (int i = 0; i<sz; ++i)
-			captureVideo >> imgs[i];
+		omp_set_num_threads(threadNum);
+#pragma omp parallel
+{
+		int numPerThread = sz / threadNum;
+		int tid = omp_get_thread_num();
+		int from = tid * numPerThread;
+		int to = (tid==threadNum-1)? sz : from + numPerThread;
+		VideoCapture cpVideo(argv[1]);
+		cpVideo.set(CV_CAP_PROP_POS_FRAMES, fid+from);
+
+		for (int i=from; i<to; ++i)
+			cpVideo >> imgs[i];
+}
 		Input += getTickCount() - Last;
 
 
