@@ -24,7 +24,7 @@ VideoWriter setOutput(const VideoCapture &input) {
 	int ex = static_cast<int>(input.get(CV_CAP_PROP_FOURCC));
 
 	VideoWriter output;
-	output.open("outputVideo.avi", CV_FOURCC('P', 'I', 'M', '1'), input.get(CV_CAP_PROP_FPS), S, true);
+	output.open("outputVideo.avi", CV_FOURCC('H', 'F', 'Y', 'U'), input.get(CV_CAP_PROP_FPS), S, true);
 
 	return output;
 }
