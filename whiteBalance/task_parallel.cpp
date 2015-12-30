@@ -43,7 +43,10 @@ void whiteBalance(int id) {
 
 	Mat &img = imgs[id];
 
-	if (img.empty()) return;
+	if (img.empty()) {
+		lck[id].unlock();
+		return;
+	}
 
 	int rows = img.rows;
 	int cols = img.cols;
@@ -126,7 +129,7 @@ void outputVideos(int sz) {
 	for (int i=0; i<sz; ++i) {
 		Last = getTickCount();
 		if( OUTPUT_VIDEO ) lck[i].lock();
-		outputVideo << imgs[i];	
+		outputVideo << imgs[i];
 		imgs[i].release();
 		if( OUTPUT_VIDEO ) lck[i].unlock();
 		Output += getTickCount() - Last;
