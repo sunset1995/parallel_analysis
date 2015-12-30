@@ -19,3 +19,4 @@ IO_test
 video_pthread_TDM
 video_openmp_TDM
 video_openmp_task
+task_parallel
