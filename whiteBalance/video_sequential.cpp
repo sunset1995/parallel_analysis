@@ -29,9 +29,6 @@ VideoWriter setOutput(const VideoCapture &input) {
 	return output;
 }
 
-// Setup video output
-VideoWriter outputVideo;
-
 struct BGR {
 	int b, g, r;
 	BGR(int b, int g, int r)
@@ -103,6 +100,8 @@ int main(int argc, const char** argv){
 		return 0;
 	}
 
+	// Setup video output
+	VideoWriter outputVideo;
 	if (OUTPUT_VIDEO)
 		outputVideo = setOutput(captureVideo);
 
