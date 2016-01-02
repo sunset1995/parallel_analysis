@@ -40,14 +40,31 @@ VideoWriter setOutput(const VideoCapture &input) {
 	return output;
 }
 
-__global__ void whiteBa(unsigned char *mat, double avg_r, double avg_g, double avg_b, int tot) {
+__global__ void whiteBa(unsigned char *r, unsigned char *g, unsigned char *b, int tot, int ele) {
 	
-	int id = (blockIdx.x * blockDim.x + threadIdx.x) * 3;
-	if (id < tot) {
-		double adj_r = avg_g / avg_r;
-		double adj_b = avg_g / avg_b;
-		mat[id + 2] = mat[id + 2] * adj_r < 255.0 ? mat[id + 2] * adj_r : 255;
-		mat[id] = mat[id] * adj_b < 255.0 ? mat[id] * adj_b : 255;
+	int i, frameId = blockIdx.x;
+	int from = ele * threadIdx.x;
+	int to = from + ele < tot ? from + ele : tot;
+	from += frameId * tot;
+	to += frameId * tot;
+	__shared__ int sum_r, sum_g, sum_b;
+	__shared__ double avg_r, avg_g, avg_b;
+	sum_r = sum_g = sum_b = 0;
+	__syncthreads();
+	for (i = from; i < to; i++) {
+		atomicAdd(&sum_r, r[i]);
+		atomicAdd(&sum_g, g[i]);
+		atomicAdd(&sum_b, b[i]);
+	}
+	__syncthreads();
+	avg_r = (double)sum_r / tot;
+	avg_g = (double)sum_g / tot;
+	avg_b = (double)sum_b / tot;
+	double adj_r = avg_g / avg_r;
+	double adj_b = avg_g / avg_b;
+	for (i = from; i < to; i++) {
+		r[i] = r[i] * adj_r < 255.0f ? r[i] * adj_r : 255;
+		b[i] = b[i] * adj_b < 255.0f ? b[i] * adj_b : 255;
 	}
 }
 
@@ -55,36 +72,48 @@ void whiteBalance_CUDA(Mat imgs[], const int &sz) {
 	
 	int i, j, k, rows = imgs[0].rows, cols = imgs[0].cols;
 	int totalElements = rows * cols;
-	int size = totalElements * sizeof(unsigned char) * 3;
-	unsigned char *device_mat = NULL;
+	static unsigned char host_r[TD_MAX_SIZE * MAX_ROWS * MAX_COLS], host_g[TD_MAX_SIZE * MAX_ROWS * MAX_COLS], host_b[TD_MAX_SIZE * MAX_ROWS * MAX_COLS];
+	unsigned char *device_r, *device_g, *device_b;
+	device_r = device_g = device_b = NULL;
 
-	
-	for (k = 0; k < sz; k++) {
-
-		double avg_r = 0.0, avg_g = 0.0, avg_b = 0.0;
-#pragma omp parallel for private(i, j) reduction(+:avg_r, avg_g, avg_b)
+#pragma omp parallel for private(i, j)
+	for (k = 0; k < sz; k++)
 		for (i = 0; i < rows; i++)
 			for (j = 0; j < cols; j++) {
-				avg_r += imgs[k].at<Vec3b>(i, j)[2];
-				avg_g += imgs[k].at<Vec3b>(i, j)[1];
-				avg_b += imgs[k].at<Vec3b>(i, j)[0];
+				host_r[totalElements * k + cols * i + j] = imgs[k].at<Vec3b>(i, j)[2];
+				host_g[totalElements * k + cols * i + j] = imgs[k].at<Vec3b>(i, j)[1];
+				host_b[totalElements * k + cols * i + j] = imgs[k].at<Vec3b>(i, j)[0];
 			}
-		avg_r /= totalElements;
-		avg_g /= totalElements;
-		avg_b /= totalElements;
+	int size = sz * rows * cols * sizeof(unsigned char);
+	cudaMalloc(&device_r, size);
+	cudaMalloc(&device_g, size);
+	cudaMalloc(&device_b, size);
+	
+	cudaMemcpy(device_r, host_r, size, cudaMemcpyHostToDevice);
+	cudaMemcpy(device_g, host_g, size, cudaMemcpyHostToDevice);
+	cudaMemcpy(device_b, host_b, size, cudaMemcpyHostToDevice);
 
-		cudaMalloc(&device_mat, size);
-		cudaMemcpy(device_mat, imgs[k].ptr(), size, cudaMemcpyHostToDevice);
+	int blocksPerGrid = sz;
+	int threadsPerBlock = 1024;
+	int elementsPerThread = (rows * cols + threadsPerBlock - 1) / threadsPerBlock;
 
-		int threadsPerBlock = 1024;
-		int blocksPerGrid = (totalElements + threadsPerBlock - 1) / threadsPerBlock;
-		whiteBa << <blocksPerGrid, threadsPerBlock >> >(device_mat, avg_r, avg_g, avg_b, totalElements);
+	whiteBa << <blocksPerGrid, threadsPerBlock >> >(device_r, device_g, device_b, totalElements, elementsPerThread);
+	
+	cudaMemcpy(host_r, device_r, size, cudaMemcpyDeviceToHost);
+	cudaMemcpy(host_g, device_g, size, cudaMemcpyDeviceToHost);
+	cudaMemcpy(host_b, device_b, size, cudaMemcpyDeviceToHost);
 
-		cudaMemcpy(imgs[k].ptr(), device_mat, size, cudaMemcpyDeviceToHost);
+#pragma omp parallel for private(i, j)
+	for (k = 0; k < sz; k++)
+		for (i = 0; i < rows; i++)
+			for (j = 0; j < cols; j++) {
+				imgs[k].at<Vec3b>(i, j)[2] = host_r[totalElements * k + cols * i + j];
+				imgs[k].at<Vec3b>(i, j)[0] = host_b[totalElements * k + cols * i + j];
+			}
 
-		cudaFree(device_mat);
-
-	}
+	cudaFree(device_r);
+	cudaFree(device_g);
+	cudaFree(device_b);
 }
 
 void inputVideo(const char *filePath, int rank, int sz, int fid) {
