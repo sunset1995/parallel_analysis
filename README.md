@@ -2,34 +2,53 @@
 Parallel final research project
 
 ## Results
-### 12/29/2015
+### 01/03/2016
 Tested environment: Win 10 x64. i7-3770, 16GB, GTX670. VS12
 
 **Sequential**
 ```
-    Total: 5.789s (include time count)
-    Input: 0.474s
-   Output: 3.624s
-Calculate: 0.576s
+    Total: 31.893s (include time count)
+    Input: 6.054s
+   Output: 23.143s
+Calculate: 2.613s
 ```
-**pthread (C++11 thread) with 4 threads**
+
+**Pthread**
 ```
-    Total: 6.896s (include time count)
-    Input: 2.043s
-   Output: 3.537s
-Calculate: 0.165s
+    Total: 26.472s (include time count)
+    Input: 2.528s
+   Output: 22.999s
+Calculate: 0.945s
 ```
-**OpenMP with 4 threads**
+
+**OpenMP**
 ```
-    Total: 5.055s (include time count)
-    Input: 0.955s
-   Output: 3.529s
-Calculate: 0.571s
+    Total: 26.276s (include time count)
+    Input: 2.425s
+   Output: 22.887s
+Calculate: 0.963s
 ```
-**CUDA (GTX670)**
+
+**Task Parallel**
 ```
-    Total: 8.923s (include time count)
-    Input: 0.910s
-   Output: 3.530s
-Calculate: 4.483s
+    Total: 24.565s (include time count)
+    Input: 10.306s
+   Output: 24.563s
+Calculate: 3.746s
+```
+
+**CUDA**
+```
+    Total: 34.246s (include time count)
+    Input: 4.777s
+   Output: 23.699s
+Calculate: 5.770s
+```
+
+**CUDA TDM**
+```
+    Total: 43.443s (include time count)
+    Input: 4.762s
+   Output: 23.437s
+Calculate: 15.244s
 ```
