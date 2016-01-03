@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Script to compile opencv code.
+# Put this script into home directory,
+# and alias in your .bashrc (or else) like
+# 	alias opencv='~/.compile_opencv.sh'
+# compile: opencv myOpenCVCode.cpp
+
+echo "Compiling OpenCV code $1"
+if [[ $1 =~ c$ ]] ; then
+	gcc -fno-reorder-blocks -O2 -ggdb `pkg-config --cflags opencv` -o `basename $1 .c` $1 `pkg-config --libs opencv` -L/lib -I/include $2 $3
+elif [[ $1 =~ cpp$ ]] ; then
+	g++ -fno-reorder-blocks -std=c++11 -O2 -ggdb `pkg-config --cflags opencv` -o `basename $1 .cpp` $1 `pkg-config --libs opencv` -L/lib -I/include $2 $3
+else
+	echo "Compile opencv only in .c or .cpp"
+fi
+
+echo "Output file => ${1%.*}"
