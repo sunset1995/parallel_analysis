@@ -32,7 +32,7 @@ void Video() {
 	// Setup video capture device
 	// Link it to the first capture device
 	VideoCapture captureVideo;
-	captureVideo.open("videoLarge.mp4");
+	captureVideo.open("D:/videoLarge.mp4");
 
 	while (true) {
 		frameFromVideos.push_back(Mat());
@@ -62,8 +62,6 @@ void Video() {
 	for (int i = 0; i<threadNum; ++i)
 		threads[i].join();
 
-	cnt = clock() - cnt;
-
 	for (int id = 0; id < frameFromVideos.size(); ++id) {
 		// getting max value
 		int max_val = 0;
@@ -78,6 +76,8 @@ void Video() {
 			for (int j = 0; j < frameFromVideos[id].cols; j++)
 				frameFromVideos[id].at<Vec3b>(i, j)[0] = mats[id][i][j] / max_val;
 	}
+
+	cnt = clock() - cnt;
 
 	printf("%fms\n", 1.0*cnt / (1.0*CLOCKS_PER_SEC / 1000.0));
 	frameFromVideos.clear();
