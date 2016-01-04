@@ -32,7 +32,7 @@ void Video() {
 	// Setup video capture device
 	// Link it to the first capture device
 	VideoCapture captureVideo;
-	captureVideo.open("D:/videoLarge.mp4");
+	captureVideo.open("videoLarge.mp4");
 
 	while (true) {
 		frameFromVideos.push_back(Mat());
@@ -42,7 +42,7 @@ void Video() {
 			break;
 		}
 
-		if (waitKey(30) >= 0) break;
+		//if (waitKey(30) >= 0) break;
 	}
 	mats.resize(frameFromVideos.size());
 	for (int id = 0; id < mats.size(); ++id) {
@@ -54,7 +54,7 @@ void Video() {
 		}
 	}
 
-	clock_t cnt = clock();
+	double cnt = getTickCount();
 
 	vector<thread> threads;
 	for (int i = 0; i<threadNum; ++i)
@@ -77,9 +77,9 @@ void Video() {
 				frameFromVideos[id].at<Vec3b>(i, j)[0] = mats[id][i][j] / max_val;
 	}
 
-	cnt = clock() - cnt;
+	cnt = getTickCount() - cnt;
 
-	printf("%fms\n", 1.0*cnt / (1.0*CLOCKS_PER_SEC / 1000.0));
+	printf("%fms\n", cnt / (getTickFrequency() / 1000.0));
 	frameFromVideos.clear();
 }
 
