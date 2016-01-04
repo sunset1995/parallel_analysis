@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <ctime>
 #include <thread>
-#include <mutex>
 
 #define SHOW_INFO false
 #define OUTPUT_VIDEO true
@@ -19,7 +18,7 @@ using namespace cv;
 int threadNum;
 int sz;
 Mat imgs[TD_MAX_SIZE];
-mutex lck[TD_MAX_SIZE];
+bool fin[TD_MAX_SIZE];
 
 VideoWriter setOutput(const VideoCapture &input) {
 	// Reference from
@@ -44,7 +43,7 @@ void whiteBalance(int id) {
 	Mat &img = imgs[id];
 
 	if (img.empty()) {
-		lck[id].unlock();
+		fin[id] = true;
 		return;
 	}
 
@@ -95,7 +94,7 @@ void whiteBalance(int id) {
 		}
 	}
 
-	if( OUTPUT_VIDEO ) lck[id].unlock();
+	if (OUTPUT_VIDEO) fin[id] = true;
 }
 
 vector<double> Inputpart, Calcupart;
@@ -128,10 +127,11 @@ void outputVideos(int sz) {
 	double Last;
 	for (int i=0; i<sz; ++i) {
 		Last = getTickCount();
-		if( OUTPUT_VIDEO ) lck[i].lock();
+		if (OUTPUT_VIDEO)
+			while (!fin[i])
+				waitKey(10);
 		outputVideo << imgs[i];
 		imgs[i].release();
-		if( OUTPUT_VIDEO ) lck[i].unlock();
 		Output += getTickCount() - Last;
 	}
 }
@@ -182,8 +182,7 @@ int main(int argc, const char** argv){
 		// one thread dedicate to output
 		thread outputThread;
 		if (OUTPUT_VIDEO) {
-			for(int i=0; i<sz; ++i)
-				lck[i].lock();
+			fill(fin, fin + sz, false);
 			outputThread = thread(outputVideos, sz);
 		}
 
@@ -213,4 +212,5 @@ int main(int argc, const char** argv){
 
 	return 0;
 }
+
 
