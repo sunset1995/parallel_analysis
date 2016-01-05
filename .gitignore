@@ -3,6 +3,7 @@
 *.jpg
 *.jpeg
 *.png
+*.old
 
 ### Visual Studio
 # User-specific files
