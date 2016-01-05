@@ -1,0 +1,4 @@
+    Total: 6.902s (include time count)
+    Input: 1.055s
+   Output: 5.236s
+Calculate: 0.610s
