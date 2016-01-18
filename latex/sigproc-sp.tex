@@ -2,6 +2,7 @@
 
 \usepackage{graphicx}
 \usepackage{float}
+\usepackage{hyperref}
 
 \begin{document}
 
@@ -37,7 +38,7 @@ Video processing typically requires immense amounts of computational resources. 
 Initially, we were interested in whether parallelizing simple image processing tasks could deliver any speedup. A number of image processing tasks rely on matrix multiplications which take only constant number of computations per pixel. This gives O(N) complexity and likely higher memory access frequencies. \\
 Seeing these computations are reasonably simple, we suspected that compilers might optimize programs to an extent where speeding up with parallelization might not be possible. To test this out, we designed and conducted 2 experiments, Lightup and Lightup2. The former does simple arimetic calculations on each pixel, while the latter multiplies each pixel by \(1.125^{(x+y)/128}\). From these experiments, we concluded that increasing the amount of computations per thread does raise speedups and that different platforms(or OSes) along with different optimization options are not the reasons for the subtle speedups in Lightup. \\
 Our research into parallel video processing branched out from here. We decided to have a closer look at the feasibility of using FPGAs to speedup video processing. We consider FPGAs a suitable choice for heterogeneous computing because FPGAs are essentially massively parallel processors. Furthermore, fully customized hardware design can lead to maximized optimization. Past research has also showed that using FPGAs as accelerators can realize better performance than using GPGPUs. In the end, we were able to obtain nearly 1000x speedup on a 1920*1080 dataset. This was also 100x faster than other approaches. \\
-Unsatisfied with Lightup experiments, we've found and tested a tool called pmbw - Parallel Memory Bandwidth Benchmark. It's a tool written in assembly that tests important memory characteristics including maximum bandwidth on our test platforms. After examining the test results from pmbw, we believed a speedup of up to 3.2x should be attainable. \\
+Unsatisfied with Lightup experiments, we've found and tested a tool called pmbw - Parallel Memory Bandwidth Benchmark / Measurement. It's a tool written in assembly that tests important memory characteristics including maximum bandwidth on our test platforms. After examining the test results from pmbw, we believed a speedup of up to 3.2x should be attainable. \\
 We then turned our attention to real-world problems. We decided to use White balance as our video processing application. The White balance algorithm we used takes O(N) time and was simple enough for us to experiment with. We used 5 different parallelization approaches: Pthread\_TDM, OpenMP\_TDM, CUDA, CUDA\_TDM and TaskParallel (We will detail these approaches in later contexts). While CUDA still delivers poor results due to frequent global memory accesses, Pthread and OpenMP managed to yield 3x speedups on the main test platform and 2x speedups on the secondary test platform. Both numbers were consistent with the test results from pmbw. We concluded that certain hardware characteristics do pose an "invisible ceiling" especially in I/O bound applications and CUDA on consumer-grade GPUs might not be suitable for this type of applications.
 
 \section{Proposed Solutions: Lightup series (CPU/GPU)}
@@ -168,34 +169,34 @@ If output is opted in (through C macro definition), the programs produce videos 
 Slowdown when input is small. Tiny speedup even when input is large. Similar results across OpenCV 2.4, Ubuntu, OSX.
 \begin{figure}[H]
   \includegraphics[width=\linewidth,natwidth=526,natheight=307]{lightup.png}
-  \caption{Lightup (Windows 10, OpenCV3, VS12, 4 Threads)}
+  \caption{Lightup (4 Threads, i7-3770, OpenCV3, VS12, Windows 10)}
   \label{fig:lightup}
 \end{figure}
 \begin{figure}[H]
   \includegraphics[width=\linewidth,natwidth=579,natheight=307]{lightup_sml.png}
-  \caption{Lightup (Windows 10, OpenCV3, Cygwin-gcc 5.2.0, 4 Threads)}
+  \caption{Lightup (4 Threads, i7-3770, OpenCV3, Cygwin-gcc 5.2.0, Windows 10)}
   \label{fig:lightup_sml}
 \end{figure}
 \begin{figure}[H]
   \includegraphics[width=\linewidth,natwidth=475,natheight=231]{lightup_osx.png}
-  \caption{Lightup (OSX El Capitan, OpenCV3, gcc 5.2.0, 4 Threads)}
+  \caption{Lightup (4 Threads, i5-4260U, OpenCV3, gcc 5.2.0, OSX El Capitan)}
   \label{fig:lightup_osx}
 \end{figure}
 \subsection{Lightup2}
 Results are clearly better. Time Division seems to be better than Frame Division.
 \begin{figure}[H]
   \includegraphics[width=\linewidth,natwidth=529,natheight=316]{lightup2.png}
-  \caption{Lightup (Windows 10, OpenCV3, VS12, 4 Threads)}
+  \caption{Lightup (4 Threads, i7-3770, OpenCV3, VS12, Windows 10)}
   \label{fig:lightup2}
 \end{figure}
 \begin{figure}[H]
   \includegraphics[width=\linewidth,natwidth=535,natheight=285]{lightup2_sml.png}
-  \caption{Lightup2 (Windows 10, OpenCV3, Cygwin-gcc 5.2.0, 4 Threads)}
+  \caption{Lightup2 (4 Threads, i7-3770, OpenCV3, Cygwin-gcc 5.2.0, Windows 10)}
   \label{fig:lightup2_sml}
 \end{figure}
 \begin{figure}[H]
   \includegraphics[width=\linewidth,natwidth=536,natheight=290]{lightup2_ubuntu.png}
-  \caption{Lightup2 (Ubuntu 14.04, OpenCV3, gcc 4.8.4, 4 Threads)}
+  \caption{Lightup2 (4 Threads, i5-4200H, OpenCV3, gcc 4.8.4, Ubuntu 14.04)}
   \label{fig:lightup2_ubuntu}
 \end{figure}
 
@@ -224,7 +225,7 @@ Large & 1.00x & 3.39x & 8.82x & \textbf{985.67x} \\ \hline
   \label{fig:lightup2.5_comparison}
 \end{figure}
 
-\subsection{pmbw - Parallel Memory Bandwidth Benchmark}
+\subsection{pmbw - Parallel Memory Bandwidth Benchmark / Measurement}
 From the results below, we conclude that I/O should be parallelization-worthy (ie. speeding up is possible). Also, the upper bound looks to be around 3.2x (on the main test platform).
 \begin{figure}[H]
   \includegraphics[width=\linewidth,natwidth=1211,natheight=850]{pmbw.png}
@@ -259,7 +260,7 @@ OpenMP\_TDM & 1.00x & 1.77x & 2.76x & 2.92x & 3.00x \\ \hline
 \end{table}
 \begin{figure}[H]
   \includegraphics[width=\linewidth,natwidth=575,natheight=312]{white_morethreads.png}
-  \caption{White Balance (i7-3770, 2 to 8 Threads, VS12, Win10)}
+  \caption{White Balance (2 to 8 Threads, i7-3770, VS12, Windows 10)}
   \label{fig:white_morethreads}
 \end{figure}
 
@@ -318,6 +319,9 @@ Pthread\_with\_TaskParallel delivers better results(ie. higher efficiency) when 
 \item Additionally, we think we should keep simple computations on the CPU end. Using NVIDIA's Nsight profiling tool, we were able to identify huge memory bottlenecks over the course of the program execution. It is perhaps futile to parallelize simple linear-complexity algorithms as the time it takes to copy the data between host and device would be relatively significant. Things could be better on a workstation-grade GPU though.
 \item Moreover, it seems that FPGAs handle parallel programming extremely well. Past research has  shown that using FPGAs as accelerators can realize better performance than using GPGPUs. It does hold true in our experiments. In our opinion, it's probably safe to say that FPGAs are great tools for applications demanding massive computations.
 \item Lastly, the video codec used for input also seems to matter. When the input video is encoded in mp4 format, parallelizing the input procedure actually slows down the whole process. It took us quite a bit of effort to accomplish the results we have right now. A reasonable guess for this would be, perhaps non-sequential reads caused slight delays in between and longer decoding times potentially triggered unwanted queueing effects.
+\item Collaborated project. All sources are publicly available on GitHub: \\
+\url{https://github.com/sunset1995/parallel_analysis} \\
+\url{https://github.com/yuwen41200/fpga-computing}
 \end{itemize}
 
 \section{Credits}
@@ -330,12 +334,17 @@ Pthread\_with\_TaskParallel delivers better results(ie. higher efficiency) when 
 \bibitem{gray_world} 
 Jason Su.
 \textit{Illuminant Estimation: Gray World}. 
-http://web.stanford.edu/~sujason/ColorBalancing/grayworld.html
+\url{http://web.stanford.edu/~sujason/ColorBalancing/grayworld.html}
+
+\bibitem{pmbw}
+Timo Bingmann.
+\textit{pmbw - Parallel Memory Bandwidth Benchmark / Measurement}.
+\url{http://panthema.net/2013/pmbw/}
 
 \bibitem{fpga_ref} 
 Xillybus Ltd. (2016).
 \textit{An FPGA IP Core for Easy DMA over PCIe with Windows and Linux [Online]}. 
-Available: http://xillybus.com/.
+\url{http://xillybus.com/.}
 \end{thebibliography}
 
 \end{document}
