@@ -38,17 +38,17 @@ Initially, we were interested in whether parallelizing simple image processing t
 Seeing these computations are reasonably simple, we suspected that compilers might optimize programs to an extent where speeding up with parallelization might not be possible. To test this out, we designed and conducted 2 experiments, lightup and lightup2. The former does simple arimetic calculations on each pixel, while the latter multiplies each pixel by \(1.125^{(x+y)/128}\). From these experiments, we concluded that increasing the amount of computations per thread does raise speedups and that different platforms(or OSes) along with different optimization options are not the reasons for the subtle speedups in lightup. \\
 Our research into parallel video processing branched out from here. We decided to have a closer look at the feasibility of using FPGAs to speedup video processing. We consider FPGAs a suitable choice for heterogeneous computing because FPGAs are essentially massively parallel processors. Furthermore, fully customized hardware design can lead to maximized optimization. Past research has also showed that using FPGAs as accelerators can realize better performance than using GPGPUs. In the end, we were able to obtain nearly 1000x speedup on a 1920*1080 dataset. This was also 100x faster than other approaches. \\
 Unsatisfied with lightup experiments, we've found and tested a tool called pmbw - Parallel Memory Bandwidth Benchmark. It's a tool written in assembly that tests important memory characteristics including maximum bandwidth on our test platforms. After examining the test results from pmbw, we believe a speedup of up to 3.1x should be attainable. \\
-We then turned our attention to real-world problems. We decided to use White balance as our video processing application. The White balance algorithm we used takes O(N) time and was simple enough for us to experiment with. We used 5 different parallelization approaches: Pthread\_TDM, OpenMP\_TDM, CUDA, CUDA\_TDM and TaskParallel. We will detail these approaches in later contexts. While CUDA still delivers poor results due to frequent global memory accesses, Pthread and OpenMP managed to yield 3x speedups on the main test platform and 2x speedups on the secondary test platform. Both platforms confirmed the test results from pmbw. We concluded that certain hardware characteristics do pose an "invisible ceiling" especially in I/O bound applications and CUDA on consumer-grade GPUs might not be suitable for this type of applications.
+We then turned our attention to real-world problems. We decided to use White balance as our video processing application. The White balance algorithm we used takes O(N) time and was simple enough for us to experiment with. We used 5 different parallelization approaches: Pthread\_TDM, OpenMP\_TDM, CUDA, CUDA\_TDM and TaskParallel (We will detail these approaches in later contexts). While CUDA still delivers poor results due to frequent global memory accesses, Pthread and OpenMP managed to yield 3x speedups on the main test platform and 2x speedups on the secondary test platform. Both platforms confirmed the test results from pmbw. We concluded that certain hardware characteristics do pose an "invisible ceiling" especially in I/O bound applications and CUDA on consumer-grade GPUs might not be suitable for this type of applications.
 
 \section{Proposed Solutions: Lightup series (CPU/GPU)}
 \subsection{lightup}
-For each pixel, \([R', G', B'] = 2 * [R, G, B] + 5\) \\
+For each pixel, \([R', G', B'] = [R, G, B * 2 + 5] \) \\
 Then normalize the RGB values back to [0, 255]. \\
-This would increase the overall color contrast.
+This would increase the overall blue contrast.
 \subsection{lightup2}
-For each pixel, \([R', G', B'] = [R, G, B] * 1.125^{(x + y) / 128}\) \\
+For each pixel, \([R', G', B'] = [R, G, B * 1.125^{(x + y) / 128}]\) \\
 Then normalize the RGB values back to [0, 255]. \\
-The images would become mostly 0's (ie. darken) except for the bottom-right corner. \\
+The blue channels would become mostly 0's (ie. image becomes yellowish) except for the bottom-right corner. \\
 \\
 * We will discuss our parallelization methods with White balance altogether.
 
@@ -165,7 +165,7 @@ If output is opted in (through C macro definition), the programs produce videos 
 \subsection{lightup}
 Slowdown when input is small. Tiny speedup even when input is large. Similar results across OpenCV 2.4, Ubuntu, OSX.
 \begin{figure}[H]
-  \includegraphics[width=\linewidth,natwidth=577,natheight=305]{lightup.png}
+  \includegraphics[width=\linewidth,natwidth=526,natheight=307]{lightup.png}
   \caption{Lightup (Windows 10, OpenCV3, VS12, 4 Threads)}
   \label{fig:lightup}
 \end{figure}
@@ -182,7 +182,7 @@ Slowdown when input is small. Tiny speedup even when input is large. Similar res
 \subsection{lightup2}
 Results are clearly better. Time Division seems to be better than Frame Division.
 \begin{figure}[H]
-  \includegraphics[width=\linewidth,natwidth=677,natheight=407]{lightup2.png}
+  \includegraphics[width=\linewidth,natwidth=529,natheight=316]{lightup2.png}
   \caption{Lightup (Windows 10, OpenCV3, VS12, 4 Threads)}
   \label{fig:lightup2}
 \end{figure}
@@ -312,7 +312,7 @@ Pthread\_with\_TaskParallel delivers better results(ie. higher efficiency) when 
 \end{itemize}
 
 \section{Conclusions}
-Our experimental results show that certain hardware characteristics, especially memory bandwidth, are closely related and relevant to the efficiency of programs with linear complexities. We experienced a maximum 3.1x speedup on the Win10 desktop and a maximum 2x speedup on the Ubuntu laptop. Both confirmed the pmbw test results from each of their platforms. It seems true that speedups do have upper bounds which depends on the hardware. \\
+Our experimental results show that certain hardware characteristics, especially memory bandwidth, are closely related and relevant to the efficiency of programs with linear complexities. We experienced a maximum 3.1x speedup on the Win10 desktop and a maximum 2x speedup on the Ubuntu laptop. Both confirmed the pmbw test results from each of their platforms. It seems true that speedups do have upper bounds which depend on the hardware. \\
 Additionally, we think we should keep simple calculations on the CPU end. Using NVIDIA's Nsight profiling tool, we were able to identify huge memory bottlenecks over the course of the program execution. It is likely futile to parallelize simple linear-complexity algorithms as the time it takes to copy the data between host and device would be relatively significant. Things could be better on a workstation-grade GPU though. \\
 Moreover, it seems that FPGAs handle parallel programming extremely well. It certainly wasn't easy to develop on FPGAs, but the staggering results made it all worthwhile. It's probably safe to say that FPGAs are great tools for applications demanding massive calculations. \\
 Lastly, the video codec used for input also seems to matter. When the input video is encoded in mp4 format, parallelizing the input procedure actually slows down the whole process. It took us quite a bit of effort to accomplish the results we have right now. A reasonable guess for this would be, perhaps non-sequential reads caused slight delays in between and longer decoding times potentially triggered unwanted queueing effects.
