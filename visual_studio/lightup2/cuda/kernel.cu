@@ -19,25 +19,25 @@ __global__ void blue(int *mat, int height, int width)
 {
 	int i = blockIdx.x * 32 + threadIdx.x
 		, j = blockIdx.y * 32 + threadIdx.y;
-	if (i < height && j < width)
+	if (i < height && j < width) {
+		int mi = mat[i * width + j];
 		for (int k = 0; k < ((i + j) >> 7); k++)
-		{
-			int &mi = mat[i * width + j];
 			mi = mi + (mi >> 3);
-		}
+		mat[i * width + j] = mi;
+	}
 }
 
 
-void Video() {
+void Video(const char **argv) {
 	// Setup video capture device
 	// Link it to the first capture device
 	cudaError_t err;
 	VideoCapture captureVideo;
-	captureVideo.open("D:/videoLarge.mp4");
+	captureVideo.open(argv[1]);
 
 	int i, j;
 	Mat frameFromVideo;
-	clock_t cnt = 0, cnt_io = 0;
+	double cnt = 0;
 
 	int *hmat, *dmat = NULL;
 
@@ -46,27 +46,24 @@ void Video() {
 		if (frameFromVideo.empty()) break;
 		// imshow("origin", frameFromVideo);
 
-		clock_t last = clock();
-
-		clock_t last_io = clock();
-
 		int rows = frameFromVideo.rows, cols = frameFromVideo.cols;
 		int size = rows * cols * sizeof(int);
 		hmat = (int *)malloc(size);
 		for (i = 0; i < rows; i++)
 			for (j = 0; j < cols; j++)
 				hmat[i * cols + j] = frameFromVideo.at<Vec3b>(i, j)[0];
+
+		double last = getTickCount();
+
 		dmat = NULL;
 		cudaMalloc(&dmat, size);
 		cudaMemcpy(dmat, hmat, size, cudaMemcpyHostToDevice);
-		cnt_io += clock() - last_io;
 
 		dim3 blk(32, 32);
 		dim3 grid(rows / blk.x, cols / blk.y);
 		blue << <grid, blk >> >(dmat, rows, cols);
-		cnt += clock() - last;
+		cnt += getTickCount() - last;
 
-		last_io = clock();
 		err = cudaMemcpy(hmat, dmat, size, cudaMemcpyDeviceToHost);
 		if (err != cudaSuccess)
 		{
@@ -90,24 +87,20 @@ void Video() {
 		cudaFree(dmat);
 		free(hmat);
 
-		cnt_io += clock() - last_io;
-
-		cnt += clock() - last;
+		cnt += getTickCount() - last;
 
 		// imshow("outputCamera", frameFromVideo);
 
 		if (waitKey(30) >= 0) break;
 	}
-	printf("Total = %fms\n", 1.0*cnt / (1.0*CLOCKS_PER_SEC / 1000.0));
-	printf("I/O = %fms\n", 1.0*cnt_io / (1.0*CLOCKS_PER_SEC / 1000.0));
+	printf("Total = %fms\n", 1.0*cnt / (getTickFrequency() / 1000.0));
 }
 
-int main()
+int main(int argc, const char **argv)
 {
 	if (CV_MAJOR_VERSION < 3) {
 		puts("Advise you update to OpenCV3");
 	}
-	Video();
-
+	Video(argv);
 	return 0;
 }

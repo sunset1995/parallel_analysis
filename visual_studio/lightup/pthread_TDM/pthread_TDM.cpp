@@ -26,12 +26,12 @@ void lightUp(int tid) {
 				mats[id][i][j] = mats[id][i][j] * 2 + 5;
 }
 
-void Video() {
+void Video(const char **argv) {
 
 	// Setup video capture device
 	// Link it to the first capture device
 	VideoCapture captureVideo;
-	captureVideo.open("D:/videoLarge.mp4");
+	captureVideo.open(argv[1]);
 
 	while (true) {
 		frameFromVideos.push_back(Mat());
@@ -43,42 +43,47 @@ void Video() {
 
 		if (waitKey(30) >= 0) break;
 	}
-	mats.resize(frameFromVideos.size());
-	for (int id = 0; id < mats.size(); ++id) {
-		mats[id].resize(frameFromVideos[0].rows);
-		for (int i = 0; i < frameFromVideos[0].rows; ++i) {
-			mats[id][i].resize(frameFromVideos[0].cols);
-			for (int j = 0; j < frameFromVideos[0].cols; ++j)
-				mats[id][i][j] = frameFromVideos[id].at<Vec3b>(i, j)[0];
-		}
-	}
+	double cnt = 0;
+	for (int k = 0; k < 3; ++k) {
 
-	clock_t cnt = clock();
+		double tmp = getTickCount();
 
-	vector<thread> threads;
-	for (int i = 0; i<threadNum; ++i)
-		threads.emplace_back(thread(lightUp, i));
-	for (int i = 0; i<threadNum; ++i)
-		threads[i].join();
-
-	for (int id = 0; id < frameFromVideos.size(); ++id) {
-		// getting max value
-		int max_val = 0;
-		for (int i = 0; i < frameFromVideos[id].rows; i++)
-			for (int j = 0; j < frameFromVideos[id].cols; j++) {
-				if (mats[id][i][j] > max_val)
-					max_val = mats[id][i][j];
+		mats.resize(frameFromVideos.size());
+		for (int id = 0; id < mats.size(); ++id) {
+			mats[id].resize(frameFromVideos[0].rows);
+			for (int i = 0; i < frameFromVideos[0].rows; ++i) {
+				mats[id][i].resize(frameFromVideos[0].cols);
+				for (int j = 0; j < frameFromVideos[0].cols; ++j)
+					mats[id][i][j] = frameFromVideos[id].at<Vec3b>(i, j)[k];
 			}
+		}
 
-		// normalizing
-		for (int i = 0; i < frameFromVideos[id].rows; i++)
-			for (int j = 0; j < frameFromVideos[id].cols; j++)
-				frameFromVideos[id].at<Vec3b>(i, j)[0] = mats[id][i][j] / max_val;
+		vector<thread> threads;
+		for (int i = 0; i < threadNum; ++i)
+			threads.emplace_back(thread(lightUp, i));
+		for (int i = 0; i < threadNum; ++i)
+			threads[i].join();
+
+		for (int id = 0; id < frameFromVideos.size(); ++id) {
+			// getting max value
+			int max_val = 0;
+			for (int i = 0; i < frameFromVideos[id].rows; i++)
+				for (int j = 0; j < frameFromVideos[id].cols; j++) {
+					if (mats[id][i][j] > max_val)
+						max_val = mats[id][i][j];
+				}
+
+			// normalizing
+			for (int i = 0; i < frameFromVideos[id].rows; i++)
+				for (int j = 0; j < frameFromVideos[id].cols; j++)
+					frameFromVideos[id].at<Vec3b>(i, j)[k] = mats[id][i][j] / max_val;
+		}
+
+		cnt += getTickCount() - tmp;
+
 	}
-	
-	cnt = clock() - cnt;
 
-	printf("%fms\n", 1.0*cnt / (1.0*CLOCKS_PER_SEC / 1000.0));
+	printf("%fms\n", cnt / (getTickFrequency()/1000.0));
 	frameFromVideos.clear();
 }
 
@@ -86,6 +91,6 @@ int main(int argc, const char** argv){
 	if (CV_MAJOR_VERSION < 3) {
 		puts("Advise you update to OpenCV3");
 	}
-	Video();
+	Video(argv);
 	return 0;
 }

@@ -7,14 +7,14 @@
 
 using namespace std;
 
-__global__ void blue(unsigned short *mat, int height, int width)
+__global__ void blue(unsigned short *mat, const int sz)
 {
-	int i = blockIdx.x * blockDim.x + threadIdx.x
-		, j = blockIdx.y * blockDim.y + threadIdx.y;
-	if (i < height && j < width) {
-		unsigned short mi = mat[i * width + j];
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i < sz) {
+		unsigned short mi = mat[i];
 		for (int k = 0; k < 1024; k++)
 			mi = mi + (mi >> 3);
+		mat[i] = mi;
 	}
 }
 
@@ -28,7 +28,7 @@ int Video() {
 	clock_t cnt = 0, cnt_io = 0;
 
 	unsigned short *hmat[3], *dmat = NULL;
-	int rows = 1920, cols = 1080;
+	int rows = 1920, cols = 1080, sz = rows * cols;
 	int size = rows * cols * sizeof(unsigned short);
 	unsigned short val[3] = { 0, 127, 255 };
 
@@ -50,9 +50,8 @@ int Video() {
 			return 1;
 		}
 
-		dim3 blk(32, 32);
-		dim3 grid((rows + 31) / blk.x, (cols + 31) / blk.y);
-		blue << <grid, blk >> >(dmat, rows, cols);
+		int blocks = (rows * cols + 1023) / 1024;
+		blue << <blocks, 1024>> >(dmat, sz);
 		cnt += clock() - last;
 		err = cudaGetLastError();
 		if (err != cudaSuccess)
@@ -96,7 +95,8 @@ int main()
 }
 
 
-/* Small
+
+/*// Small
 #include "cuda_runtime.h"
 #include <cstdio>
 #include <iostream>
@@ -105,18 +105,16 @@ int main()
 
 using namespace std;
 
-__global__ void blue(unsigned short *mat, int height, int width)
+__global__ void blue(unsigned short *mat, int sz)
 {
-	int i = blockIdx.x * blockDim.x + threadIdx.x
-		, j = blockIdx.y * blockDim.y + threadIdx.y;
-	if (i < height && j < width) {
-		unsigned short mi = mat[i * width + j];
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i < sz) {
+		unsigned short mi = mat[i];
 		for (int k = 0; k < 1024; k++)
 			mi = mi + (mi >> 3);
-		mat[i * width + j];
+		mat[i] = mi;
 	}
 }
-
 
 int Video() {
 	// Setup video capture device
@@ -149,9 +147,8 @@ int Video() {
 		return 1;
 	}
 
-	dim3 blk(32, 32);
-	dim3 grid(rows / blk.x, cols / blk.y);
-	blue << <grid, blk >> >(dmat, rows, cols);
+	int blocks = (rows * cols + 1023) / 1024, sz = rows * cols;
+	blue << <blocks, 1024>> >(dmat, sz);
 	cnt += clock() - last;
 	err = cudaGetLastError();
 	if (err != cudaSuccess)
@@ -171,9 +168,9 @@ int Video() {
 
 
 	cout << endl << "Results from frame 0: " << endl;
-	for (int i = 0; i < 256; ++i)
-		for (int j = 0; j < 256; ++j)
-			cout << hmat[i * cols + j] << " ";
+	// for (int i = 0; i < 256; ++i)
+	// 	for (int j = 0; j < 256; ++j)
+	//		cout << hmat[i * cols + j] << " ";
 
 	printf("Total = %fms\n", 1.0*cnt / (1.0*CLOCKS_PER_SEC / 1000.0));
 
