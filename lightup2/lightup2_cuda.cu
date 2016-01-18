@@ -98,8 +98,8 @@ void Video(const char **argv) {
 
 		if (waitKey(30) >= 0) break;
 	}
-	printf("Total = %fms\n", 1.0*cnt / (1.0*CLOCKS_PER_SEC / 1000.0));
-	printf("I/O = %fms\n", 1.0*cnt_io / (1.0*CLOCKS_PER_SEC / 1000.0));
+	printf("Total = %fms\n", 1.0*cnt / (getTickFrequency() / 1000.0));
+	printf("I/O = %fms\n", 1.0*cnt_io / (getTickFrequency() / 1000.0));
 }
 
 int main(int argc, const char **argv)
