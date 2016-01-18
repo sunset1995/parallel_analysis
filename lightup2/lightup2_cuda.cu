@@ -19,12 +19,12 @@ __global__ void blue(int *mat, int height, int width)
 {
 	int i = blockIdx.x * 32 + threadIdx.x
 		, j = blockIdx.y * 32 + threadIdx.y;
-	if (i < height && j < width)
+	if (i < height && j < width) {
+		int mi = mat[i * width + j];
 		for (int k = 0; k < ((i + j) >> 7); k++)
-		{
-			int &mi = mat[i * width + j];
 			mi = mi + (mi >> 3);
-		}
+		mat[i * width + j] = mi;
+	}
 }
 
 
@@ -37,7 +37,7 @@ void Video(const char **argv) {
 
 	int i, j;
 	Mat frameFromVideo;
-	double cnt = 0, cnt_io = 0;
+	double cnt = 0;
 
 	int *hmat, *dmat = NULL;
 
@@ -46,27 +46,24 @@ void Video(const char **argv) {
 		if (frameFromVideo.empty()) break;
 		// imshow("origin", frameFromVideo);
 
-		double last = getTickCount();
-
-		double last_io = getTickCount();
-
 		int rows = frameFromVideo.rows, cols = frameFromVideo.cols;
 		int size = rows * cols * sizeof(int);
 		hmat = (int *)malloc(size);
 		for (i = 0; i < rows; i++)
 			for (j = 0; j < cols; j++)
 				hmat[i * cols + j] = frameFromVideo.at<Vec3b>(i, j)[0];
+
+		double last = getTickCount();
+
 		dmat = NULL;
 		cudaMalloc(&dmat, size);
 		cudaMemcpy(dmat, hmat, size, cudaMemcpyHostToDevice);
-		cnt_io += getTickCount() - last_io;
 
 		dim3 blk(32, 32);
 		dim3 grid(rows / blk.x, cols / blk.y);
 		blue << <grid, blk >> >(dmat, rows, cols);
 		cnt += getTickCount() - last;
 
-		last_io = getTickCount();
 		err = cudaMemcpy(hmat, dmat, size, cudaMemcpyDeviceToHost);
 		if (err != cudaSuccess)
 		{
@@ -90,8 +87,6 @@ void Video(const char **argv) {
 		cudaFree(dmat);
 		free(hmat);
 
-		cnt_io += getTickCount() - last_io;
-
 		cnt += getTickCount() - last;
 
 		// imshow("outputCamera", frameFromVideo);
@@ -99,7 +94,6 @@ void Video(const char **argv) {
 		if (waitKey(30) >= 0) break;
 	}
 	printf("Total = %fms\n", 1.0*cnt / (getTickFrequency() / 1000.0));
-	printf("I/O = %fms\n", 1.0*cnt_io / (getTickFrequency() / 1000.0));
 }
 
 int main(int argc, const char **argv)
@@ -108,6 +102,5 @@ int main(int argc, const char **argv)
 		puts("Advise you update to OpenCV3");
 	}
 	Video(argv);
-
 	return 0;
 }

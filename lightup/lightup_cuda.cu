@@ -35,7 +35,7 @@ void Video(const char **argv) {
 
 	int i, j;
 	Mat frameFromVideo;
-	double cnt = 0, cnt_io = 0;
+	double cnt = 0;
 
 	int *hmat, *dmat = NULL;
 
@@ -44,60 +44,58 @@ void Video(const char **argv) {
 		if (frameFromVideo.empty()) break;
 		// imshow("origin", frameFromVideo);
 
-		double last = getTickCount();
+		// for (int k = 0; k < 3; ++k) {
 
-		double last_io = getTickCount();
+			int rows = frameFromVideo.rows, cols = frameFromVideo.cols;
+			int size = rows * cols * sizeof(int);
+			hmat = (int *)malloc(size);
+			for (i = 0; i < rows; i++)
+				for (j = 0; j < cols; j++)
+					hmat[i * cols + j] = frameFromVideo.at<Vec3b>(i, j)[0];
 
-		int rows = frameFromVideo.rows, cols = frameFromVideo.cols;
-		int size = rows * cols * sizeof(int);
-		hmat = (int *)malloc(size);
-		for (i = 0; i < rows; i++)
-			for (j = 0; j < cols; j++)
-				hmat[i * cols + j] = frameFromVideo.at<Vec3b>(i, j)[0];
-		dmat = NULL;
-		cudaMalloc(&dmat, size);
-		cudaMemcpy(dmat, hmat, size, cudaMemcpyHostToDevice);
-		cnt_io += getTickCount() - last_io;
+			double last = getTickCount();
 
-		dim3 blk(32, 32);
-		dim3 grid(rows / blk.x, cols / blk.y);
-		blue << <grid, blk >> >(dmat, rows, cols);
-		cnt += getTickCount() - last;
+			dmat = NULL;
+			cudaMalloc(&dmat, size);
+			cudaMemcpy(dmat, hmat, size, cudaMemcpyHostToDevice);
 
-		last_io = getTickCount();
-		err = cudaMemcpy(hmat, dmat, size, cudaMemcpyDeviceToHost);
-		if (err != cudaSuccess)
-		{
-			fprintf(stderr, "Failed while Memcpying back! %s\n", cudaGetErrorString(err));
-			exit(EXIT_FAILURE);
-		}
+			dim3 blk(32, 32);
+			dim3 grid(rows / blk.x, cols / blk.y);
+			blue << <grid, blk >> >(dmat, rows, cols);
+			cnt += getTickCount() - last;
 
-		// getting max value
-		int max_val = 0;
-		for (i = 0; i < rows; i++)
-			for (j = 0; j < cols; j++) {
-				if (hmat[i * cols + j] > max_val)
-					max_val = hmat[i * cols + j];
+			err = cudaMemcpy(hmat, dmat, size, cudaMemcpyDeviceToHost);
+			if (err != cudaSuccess)
+			{
+				fprintf(stderr, "Failed while Memcpying back! %s\n", cudaGetErrorString(err));
+				exit(EXIT_FAILURE);
 			}
 
-		// normalizing
-		for (i = 0; i < rows; i++)
-			for (j = 0; j < cols; j++)
-				frameFromVideo.at<Vec3b>(i, j)[0] = hmat[i * cols + j] * 255 / max_val;
+			// getting max value
+			int max_val = 0;
+			for (i = 0; i < rows; i++)
+				for (j = 0; j < cols; j++) {
+					if (hmat[i * cols + j] > max_val)
+						max_val = hmat[i * cols + j];
+				}
 
-		cudaFree(dmat);
-		free(hmat);
+			// normalizing
+			for (i = 0; i < rows; i++)
+				for (j = 0; j < cols; j++)
+					frameFromVideo.at<Vec3b>(i, j)[0] = hmat[i * cols + j] * 255 / max_val;
 
-		cnt_io += getTickCount() - last_io;
+			cudaFree(dmat);
+			free(hmat);
 
-		cnt += getTickCount() - last;
+			cnt += getTickCount() - last;
+
+		// }
 
 		// imshow("outputCamera", frameFromVideo);
 
 		if (waitKey(30) >= 0) break;
 	}
 	printf("Total = %fms\n", 1.0*cnt / (getTickFrequency() / 1000.0));
-	printf("I/O = %fms\n", 1.0*cnt_io / (getTickFrequency() / 1000.0));
 }
 
 int main(int argc, const char** argv){
