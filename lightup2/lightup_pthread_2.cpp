@@ -23,7 +23,8 @@ void lightUp(int tid) {
 	for (int id = from; id<to; ++id)
 		for (int i = 0; i<rows; ++i)
 			for (int j = 0; j<cols; ++j)
-				mats[id][i][j] = mats[id][i][j] * 2 + 5;
+				for (int k = 0; k < ((i + j) >> 7); ++k)
+					mats[id][i][j] += mats[id][i][j] >> 3;
 }
 
 void Video(const char **argv) {
@@ -75,7 +76,7 @@ void Video(const char **argv) {
 			for (int j = 0; j < frameFromVideos[id].cols; j++)
 				frameFromVideos[id].at<Vec3b>(i, j)[0] = mats[id][i][j] / max_val;
 	}
-	
+
 	cnt = clock() - cnt;
 
 	printf("%fms\n", 1.0*cnt / (1.0*CLOCKS_PER_SEC / 1000.0));

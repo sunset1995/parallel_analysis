@@ -3,36 +3,22 @@
 #include <cstdio>
 #include <algorithm>
 #include <ctime>
-#include <thread>
-#include <vector>
-
-#define threadNum 4
 
 using namespace std;
 using namespace cv;
 
 vector<vector<int> > mat;
-Mat frameFromVideo;
 
-void lightUp(int tid) {
-	int threadPerNum = frameFromVideo.rows / threadNum;
-	int from = tid * threadPerNum;
-	int to = (tid == threadNum - 1) ? frameFromVideo.rows : from + threadPerNum;
-	for (int i = from; i < to; ++i)
-		for (int j = 0; j < frameFromVideo.cols; ++j) {
-			mat[i][j] = mat[i][j] * 2 + 5;
-		}
-}
 
 void Video(const char **argv) {
-
 	// Setup video capture device
 	// Link it to the first capture device
 	VideoCapture captureVideo;
 	captureVideo.open(argv[1]);
 
+	Mat frameFromVideo;
 	clock_t cnt = 0;
-	while (true) {
+	while (true){
 		captureVideo >> frameFromVideo;
 		if (frameFromVideo.empty()) break;
 		//imshow("origin", frameFromVideo);
@@ -46,14 +32,14 @@ void Video(const char **argv) {
 			for (int j = 0; j < frameFromVideo.cols; ++j)
 				mat[i][j] = frameFromVideo.at<Vec3b>(i, j)[0];
 
-
 		clock_t last = clock();
-		vector<thread> threads;
-		for (int i = 0; i<threadNum; ++i)
-			threads.emplace_back(thread(lightUp, i));
-		for (int i = 0; i<threadNum; ++i)
-			threads[i].join();
-
+		for (int i = 0; i < frameFromVideo.rows; i++)
+			for (int j = 0; j < frameFromVideo.cols; j++) {
+				int tmp = mat[i][j];
+				for (int k = 0; k < ((i + j) >> 7); ++k)
+					tmp += tmp >> 3;
+				mat[i][j] = tmp;
+			}
 
 		// getting max value
 		int max_val = 0;
@@ -66,11 +52,10 @@ void Video(const char **argv) {
 		// normalizing
 		for (int i = 0; i < frameFromVideo.rows; i++)
 			for (int j = 0; j < frameFromVideo.cols; j++)
-				frameFromVideo.at<Vec3b>(i, j)[0] = mat[i][j] / max_val;
+				frameFromVideo.at<Vec3b>(i, j)[0] = mat[i][j] * 255 / max_val;
 
 		cnt += clock() - last;
-
-		// imshow("outputCamera", frameFromVideo);
+		//imshow("outputCamera", frameFromVideo);
 
 		if (waitKey(30) >= 0) break;
 	}
