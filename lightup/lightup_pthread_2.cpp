@@ -53,7 +53,7 @@ void Video(const char **argv) {
 		}
 	}
 
-	clock_t cnt = clock();
+	double cnt = getTickCount();
 
 	vector<thread> threads;
 	for (int i = 0; i<threadNum; ++i)
@@ -76,9 +76,9 @@ void Video(const char **argv) {
 				frameFromVideos[id].at<Vec3b>(i, j)[0] = mats[id][i][j] / max_val;
 	}
 	
-	cnt = clock() - cnt;
+	cnt = getTickCount() - cnt;
 
-	printf("%fms\n", 1.0*cnt / (1.0*CLOCKS_PER_SEC / 1000.0));
+	printf("%fms\n", cnt / (getTickFrequency()/1000.0));
 	frameFromVideos.clear();
 }
 

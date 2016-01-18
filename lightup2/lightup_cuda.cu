@@ -37,7 +37,7 @@ void Video(const char **argv) {
 
 	int i, j;
 	Mat frameFromVideo;
-	clock_t cnt = 0, cnt_io = 0;
+	double cnt = 0, cnt_io = 0;
 
 	int *hmat, *dmat = NULL;
 
@@ -46,9 +46,9 @@ void Video(const char **argv) {
 		if (frameFromVideo.empty()) break;
 		// imshow("origin", frameFromVideo);
 
-		clock_t last = clock();
+		double last = getTickCount();
 
-		clock_t last_io = clock();
+		double last_io = getTickCount();
 
 		int rows = frameFromVideo.rows, cols = frameFromVideo.cols;
 		int size = rows * cols * sizeof(int);
@@ -59,14 +59,14 @@ void Video(const char **argv) {
 		dmat = NULL;
 		cudaMalloc(&dmat, size);
 		cudaMemcpy(dmat, hmat, size, cudaMemcpyHostToDevice);
-		cnt_io += clock() - last_io;
+		cnt_io += getTickCount() - last_io;
 
 		dim3 blk(32, 32);
 		dim3 grid(rows / blk.x, cols / blk.y);
 		blue << <grid, blk >> >(dmat, rows, cols);
-		cnt += clock() - last;
+		cnt += getTickCount() - last;
 
-		last_io = clock();
+		last_io = getTickCount();
 		err = cudaMemcpy(hmat, dmat, size, cudaMemcpyDeviceToHost);
 		if (err != cudaSuccess)
 		{
@@ -90,9 +90,9 @@ void Video(const char **argv) {
 		cudaFree(dmat);
 		free(hmat);
 
-		cnt_io += clock() - last_io;
+		cnt_io += getTickCount() - last_io;
 
-		cnt += clock() - last;
+		cnt += getTickCount() - last;
 
 		// imshow("outputCamera", frameFromVideo);
 

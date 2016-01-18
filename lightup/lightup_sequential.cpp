@@ -17,7 +17,7 @@ void Video(const char **argv) {
 	captureVideo.open(argv[1]);
 
 	Mat frameFromVideo;
-	clock_t cnt = 0;
+	double cnt = 0;
 	while (true){
 		captureVideo >> frameFromVideo;
 		if (frameFromVideo.empty()) break;
@@ -32,7 +32,7 @@ void Video(const char **argv) {
 			for (int j = 0; j < frameFromVideo.cols; ++j)
 				mat[i][j] = frameFromVideo.at<Vec3b>(i, j)[0];
 
-		clock_t last = clock();
+		double last = getTickCount();
 		for (int i = 0; i < frameFromVideo.rows; i++)
 			for (int j = 0; j < frameFromVideo.cols; j++) {
 				mat[i][j] = mat[i][j] * 2 + 5;
@@ -51,12 +51,12 @@ void Video(const char **argv) {
 			for (int j = 0; j < frameFromVideo.cols; j++)
 				frameFromVideo.at<Vec3b>(i, j)[0] = mat[i][j] * 255 / max_val;
 
-		cnt += clock() - last;
+		cnt += getTickCount() - last;
 		//imshow("outputCamera", frameFromVideo);
 
 		if (waitKey(30) >= 0) break;
 	}
-	printf("%fms\n", 1.0*cnt / (1.0*CLOCKS_PER_SEC / 1000.0));
+	printf("%fms\n", cnt / (getTickFrequency()/1000.0));
 }
 
 int main(int argc, const char** argv){
