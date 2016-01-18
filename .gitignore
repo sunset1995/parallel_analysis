@@ -4,6 +4,7 @@
 *.jpeg
 *.png
 *.old
+*.exe
 
 ### Visual Studio
 # User-specific files

@@ -19,10 +19,12 @@ __global__ void blue(int *mat, int height, int width)
 {
 	int i = blockIdx.x * 32 + threadIdx.x
 		, j = blockIdx.y * 32 + threadIdx.y;
-	if (i < height && j < width) {
-		int &mi = mat[i * width + j];
-		mi = mi * 2 + 5;
-	}
+	if (i < height && j < width)
+		for (int k = 0; k < ((i + j) >> 7); k++)
+		{
+			int &mi = mat[i * width + j];
+			mi = mi + (mi >> 3);
+		}
 }
 
 
@@ -100,7 +102,8 @@ void Video(const char **argv) {
 	printf("I/O = %fms\n", 1.0*cnt_io / (1.0*CLOCKS_PER_SEC / 1000.0));
 }
 
-int main(int argc, const char** argv){
+int main(int argc, const char **argv)
+{
 	if (CV_MAJOR_VERSION < 3) {
 		puts("Advise you update to OpenCV3");
 	}
