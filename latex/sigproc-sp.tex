@@ -37,7 +37,7 @@ Video processing typically requires immense amounts of computational resources. 
 \section{Introduction}
 Initially, we were interested in whether parallelizing simple image processing tasks could deliver any speedup. A number of image processing tasks rely on matrix multiplications which take only constant number of computations per pixel. This gives O(N) complexity and likely higher memory access frequencies. \\
 Seeing these computations are reasonably simple, we suspected that compilers might optimize programs to an extent where speeding up with parallelization might not be possible. To test this out, we designed and conducted 2 experiments, Lightup and Lightup2. The former does simple arimetic calculations on each pixel, while the latter multiplies each pixel by \(1.125^{(x+y)/128}\). From these experiments, we concluded that increasing the amount of computations per thread does raise speedups and that different platforms(or OSes) along with different optimization options are not the reasons for the subtle speedups in Lightup. \\
-Our research into parallel video processing branched out from here. We decided to have a closer look at the feasibility of using FPGAs to speedup video processing. We consider FPGAs a suitable choice for heterogeneous computing because FPGAs are essentially massively parallel processors. Furthermore, fully customized hardware design can lead to maximized optimization. Past research has also showed that using FPGAs as accelerators can realize better performance than using GPGPUs. In the end, we were able to obtain nearly 1000x speedup on a 1920*1080 dataset. This was also 100x faster than other approaches. \\
+Our research into parallel video processing branched out from here. We decided to have a closer look at the feasibility of using FPGAs to speedup video processing. We consider FPGAs a suitable choice for heterogeneous computing because FPGAs are essentially massively parallel processors. Fully customized hardware designs can lead to maximized optimization. In the end, we were able to obtain nearly 1000x speedup on a 1920*1080 dataset. This was also 100x faster than other approaches. \\
 Unsatisfied with Lightup experiments, we've found and tested a tool called pmbw - Parallel Memory Bandwidth Benchmark / Measurement. It's a tool written in assembly that tests important memory characteristics including maximum bandwidth on our test platforms. After examining the test results from pmbw, we believed a speedup of up to 3.2x should be attainable. \\
 We then turned our attention to real-world problems. We decided to use White balance as our video processing application. The White balance algorithm we used takes O(N) time and was simple enough for us to experiment with. We used 5 different parallelization approaches: Pthread\_TDM, OpenMP\_TDM, CUDA, CUDA\_TDM and TaskParallel (We will detail these approaches in later contexts). While CUDA still delivers poor results due to frequent global memory accesses, Pthread and OpenMP managed to yield 3x speedups on the main test platform and 2x speedups on the secondary test platform. Both numbers were consistent with the test results from pmbw. We concluded that certain hardware characteristics do pose an "invisible ceiling" especially in I/O bound applications and CUDA on consumer-grade GPUs might not be suitable for this type of applications.
 
@@ -56,8 +56,10 @@ The blue channels would become mostly 0's (ie. image becomes yellowish) except f
 \section{Proposed Solutions: Lightup2.5 (FPGA)}
 \subsection{Lightup2.5}
 For each pixel, \([R', G', B'] = [R, G, B] * 1.125^{1024}\)
+\subsection{Considerations}
+The performance of the circuit is highly dependent on the quality of the circuit design and the available resources on the FPGA development board. Although some EDA (electronic design automation) tools, like Xilinx SDAccel, support high-level synthesis that can convert OpenCL C/C++ codes into schematics, these techniques are not mature enough, and may lead to poor performance.
 \subsection{Implementation}
-We employ RTL (register-transfer level) design by the Verilog HDL (hardware description language), and we use the Xillybus IP core [2] for data transmission over the PCIe interface. Our targeted board is Xilinx Virtex-5 ML506 Evaluation Platform (w/ XC5VSX50T FPGA). We use C++ for software design. The host programs run on 64-bit Linux distributions.
+We employ RTL (register-transfer level) design by the Verilog HDL (hardware description language), and we use the Xillybus IP core [2] for data transmission over the PCIe interface. Our targeted board is Xilinx Virtex-5 ML506 Evaluation Platform. We use C++ for software design. The host programs run on a 64-bit Linux.
 \begin{figure}[H]
   \includegraphics[width=\linewidth,natwidth=600,natheight=984]{fpga_connect.jpg}
   \label{fig:fpga_connect}
@@ -71,10 +73,11 @@ The PC-end (host) is on the left side, whereas the FPGA-end (device) is on the r
 \subsubsection{Data Interface}
 To hosts, the device looks just like a file. So we can use low-level (POSIX) file I/O functions to read/write data from/to the device, i.e. the FPGA board.
 \subsubsection{Multithreading on Software}
-For best performance, there are also 2 threads implemented on the host. The first is used to send data, the other is used to receive data.
+For best performance, we have 2 threads implemented on the host program. The first is used to send data, the other is used to receive data.
 \subsection{Kernel Instantiation}
-We use a \textit{generate block} to instantiate 256 kernel modules, namely, 256 simultaneously running threads. Each kernel module calculates a single color value, so the FPGA can calculate at most 256 values at the same time. \\
-A Finite-State Machine was used. In it, there are 4 states: IDLE\_STATE, RECV\_STATE, EXEC\_STATE, and SEND\_STATE. After the program starts, the circuit goes to the second state. The second state waits and receives 256 color values, until then, it goes to the third state. The third state processes the 256 received values in parallel, then it goes to the last state. The last state waits and sends 256 new values back, and goes to the first state again.
+We use a \textit{generate block} to instantiate 256 kernel modules, namely, 256 simultaneously running threads. Each kernel module calculates a single color value, so the FPGA can calculate at most 256 values at the same time.
+\subsubsection {Finite State Machine}
+4 states: IDLE\_STATE, RECV\_STATE, EXEC\_STATE, and SEND\_STATE. After the program starts, the circuit goes to the second state. The second state waits and receives 256 color values, until then, it goes to the third state. The third state processes the 256 received values in parallel, then it goes to the last state. The last state waits and sends 256 new values back, and goes to the first state again.
 
 \section{Proposed Solutions: White balance}
 \subsection{Block diagram}
@@ -146,13 +149,13 @@ Ubuntu 15.10 & 2 vCores & 2GB & gcc 5.2.0 \\ \hline
 \end{table}
 GPU (on i7 PC): GeForce GTX 670, CUDA v7.5, CUDA Capability 3.0. \\
 \\
-FPGA: ML506 Evaluation Platform. \\
+FPGA Board: Xilinx Virtex-5 ML506 Evaluation Platform. \\
 FPGA Host PC: Ubuntu 14.04, i5-3570(4C4T), 8GB, gcc 4.8.4.
 \subsection{Input datasets}
 \subsubsection{Lightup \& Lightup2:}
  360*240 / 1280*720 / 1920*1080, 148 frames (MP4). \\
 \subsubsection{Lightup2.5:}
- 256*256 / 1920*1080*3 (Pure data). \\
+ 256*256 / 1920*1080*3 (Raw data). \\
 \subsubsection{White balance:}
  1280*720, 1422Frames (MP4, AVI). \\
 
@@ -160,7 +163,7 @@ FPGA Host PC: Ubuntu 14.04, i5-3570(4C4T), 8GB, gcc 4.8.4.
 \subsubsection{Lightup \& Lightup2:}
 During visual inspection, the programs display output video in realtime.
 \subsubsection{Lightup2.5:}
-Pure data (arrays) of sizes 256*256 / 1920*1080*3.
+Raw data (arrays) of sizes 256*256 / 1920*1080*3.
 \subsubsection{White balance:}
 If output is opted in (through C macro definition), the programs produce videos in the same resolution as input in AVI format. 
 
@@ -168,7 +171,7 @@ If output is opted in (through C macro definition), the programs produce videos 
 \subsection{Lightup}
 Slowdown when input is small. Tiny speedup even when input is large. Similar results across OpenCV 2.4, Ubuntu, OSX.
 \begin{figure}[H]
-  \includegraphics[width=\linewidth,natwidth=526,natheight=307]{lightup.png}
+  \includegraphics[width=\linewidth,natwidth=526,natheight=251]{lightup.png}
   \caption{Lightup (4 Threads, i7-3770, OpenCV3, VS12, Windows 10)}
   \label{fig:lightup}
 \end{figure}
@@ -185,7 +188,7 @@ Slowdown when input is small. Tiny speedup even when input is large. Similar res
 \subsection{Lightup2}
 Results are clearly better. Time Division seems to be better than Frame Division.
 \begin{figure}[H]
-  \includegraphics[width=\linewidth,natwidth=526,natheight=313]{lightup2.png}
+  \includegraphics[width=\linewidth,natwidth=526,natheight=282]{lightup2.png}
   \caption{Lightup2 (4 Threads, i7-3770, OpenCV3, VS12, Windows 10)}
   \label{fig:lightup2}
 \end{figure}
@@ -238,12 +241,12 @@ From the results below, we conclude that I/O should be parallelization-worthy (i
   \caption{White balance Results: Before and After}
   \label{fig:whitebalance_comparison}
 \end{figure}
-2 Threads, i7-3770(4C8T), 16GB, VS12, Windows 10: \\
+2 Threads, i7-3770, 16GB, VS12, Windows 10: \\
 Pthread\_TDM: 1.69x speedup \\
 OpenMP\_TDM: 1.77x speedup
 \begin{figure}[H]
-  \includegraphics[width=\linewidth,natwidth=569,natheight=336]{white2.png}
-  \caption{White balance with 2 threads}
+  \includegraphics[width=\linewidth,natwidth=569,natheight=299]{white2.png}
+  \caption{2 Threads, i7-3770, 16GB, VS12, Windows 10}
   \label{fig:white2}
 \end{figure}
 \subsection{White balance and more threads}
@@ -319,15 +322,15 @@ Pthread\_with\_TaskParallel delivers better results(ie. higher efficiency) when 
 \item Additionally, we think we should keep simple computations on the CPU end. Using NVIDIA's Nsight profiling tool, we were able to identify huge memory bottlenecks over the course of the program execution. It is perhaps futile to parallelize simple linear-complexity algorithms as the time it takes to copy the data between host and device would be relatively significant. Things could be better on a workstation-grade GPU though.
 \item Moreover, it seems that FPGAs handle parallel programming extremely well. Past research has  shown that using FPGAs as accelerators can realize better performance than using GPGPUs. It does hold true in our experiments. In our opinion, it's probably safe to say that FPGAs are great tools for applications demanding massive computations.
 \item Lastly, the video codec used for input also seems to matter. When the input video is encoded in mp4 format, parallelizing the input procedure actually slows down the whole process. It took us quite a bit of effort to accomplish the results we have right now. A reasonable guess for this would be, perhaps non-sequential reads caused slight delays in between and longer decoding times potentially triggered unwanted queueing effects.
-\item Collaborated project. All sources are publicly available on GitHub: \\
-\url{https://github.com/sunset1995/parallel_analysis} \\
-\url{https://github.com/yuwen41200/fpga-computing}
 \end{itemize}
 
-\section{Credits}
+\section{Endnotes}
 \begin{itemize}
 \item We would like to thank Prof. Yi-Ping You, Assistant Professor at the Department of Computer Science, National Chiao Tung University and the teaching assistants for an excellent course (Parallel Programming, Fall 2015). The knowledge we gained throughout the course helped us tremendously.
 \item We would also like to thank Prof. Chun-Jen Tsai, Associate Professor at the Department of Computer Science, National Chiao Tung University for lending the FPGA board (ML506 Evaluation Platform) to us and for all the advices he offered during the research.
+\item Collaborated project. All sources are publicly available on GitHub: \\
+\url{https://github.com/sunset1995/parallel_analysis} \\
+\url{https://github.com/yuwen41200/fpga-computing}
 \end{itemize}
 
 \begin{thebibliography}{9}

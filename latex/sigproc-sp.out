@@ -4,42 +4,44 @@
 \BOOKMARK [2][-]{subsection.2.2}{Lightup}{section.2}% 4
 \BOOKMARK [1][-]{section.3}{Proposed Solutions: Lightup2.5 \(FPGA\)}{}% 5
 \BOOKMARK [2][-]{subsection.3.1}{Lightup2.5}{section.3}% 6
-\BOOKMARK [2][-]{subsection.3.2}{Implementation}{section.3}% 7
-\BOOKMARK [2][-]{subsection.3.3}{Computation Platform}{section.3}% 8
-\BOOKMARK [3][-]{subsubsection.3.3.1}{Data Interface}{subsection.3.3}% 9
-\BOOKMARK [3][-]{subsubsection.3.3.2}{Multithreading on Software}{subsection.3.3}% 10
-\BOOKMARK [2][-]{subsection.3.4}{Kernel Instantiation}{section.3}% 11
-\BOOKMARK [1][-]{section.4}{Proposed Solutions: White balance}{}% 12
-\BOOKMARK [2][-]{subsection.4.1}{Block diagram}{section.4}% 13
-\BOOKMARK [2][-]{subsection.4.2}{Algorithm}{section.4}% 14
-\BOOKMARK [2][-]{subsection.4.3}{Initialization}{section.4}% 15
-\BOOKMARK [2][-]{subsection.4.4}{Parallel method1: Pthread}{section.4}% 16
-\BOOKMARK [2][-]{subsection.4.5}{Parallel method2: Pthread\137TDM}{section.4}% 17
-\BOOKMARK [2][-]{subsection.4.6}{Parallel method3: OpenMP\137TDM}{section.4}% 18
-\BOOKMARK [2][-]{subsection.4.7}{Parallel method4: CUDA}{section.4}% 19
-\BOOKMARK [2][-]{subsection.4.8}{Parallel method5: CUDA\137TDM}{section.4}% 20
-\BOOKMARK [2][-]{subsection.4.9}{Parallel method6: Pthread\137with\137TaskParallel}{section.4}% 21
-\BOOKMARK [1][-]{section.5}{Experimental Methodology}{}% 22
-\BOOKMARK [2][-]{subsection.5.1}{Environment specifications}{section.5}% 23
-\BOOKMARK [2][-]{subsection.5.2}{Input datasets}{section.5}% 24
-\BOOKMARK [3][-]{subsubsection.5.2.1}{Lightup \046 Lightup2:}{subsection.5.2}% 25
-\BOOKMARK [3][-]{subsubsection.5.2.2}{Lightup2.5:}{subsection.5.2}% 26
-\BOOKMARK [3][-]{subsubsection.5.2.3}{White balance:}{subsection.5.2}% 27
-\BOOKMARK [2][-]{subsection.5.3}{Output}{section.5}% 28
-\BOOKMARK [3][-]{subsubsection.5.3.1}{Lightup \046 Lightup2:}{subsection.5.3}% 29
-\BOOKMARK [3][-]{subsubsection.5.3.2}{Lightup2.5:}{subsection.5.3}% 30
-\BOOKMARK [3][-]{subsubsection.5.3.3}{White balance:}{subsection.5.3}% 31
-\BOOKMARK [1][-]{section.6}{Experimental Results}{}% 32
-\BOOKMARK [2][-]{subsection.6.1}{Lightup}{section.6}% 33
-\BOOKMARK [2][-]{subsection.6.2}{Lightup2}{section.6}% 34
-\BOOKMARK [2][-]{subsection.6.3}{Lightup2.5 \(FPGA\)}{section.6}% 35
-\BOOKMARK [2][-]{subsection.6.4}{pmbw - Parallel Memory Bandwidth Benchmark / Measurement}{section.6}% 36
-\BOOKMARK [2][-]{subsection.6.5}{White balance}{section.6}% 37
-\BOOKMARK [2][-]{subsection.6.6}{White balance and more threads}{section.6}% 38
-\BOOKMARK [2][-]{subsection.6.7}{White balance and other platforms}{section.6}% 39
-\BOOKMARK [2][-]{subsection.6.8}{White balance Profiling results}{section.6}% 40
-\BOOKMARK [2][-]{subsection.6.9}{White balance when output is accounted}{section.6}% 41
-\BOOKMARK [1][-]{section.7}{Related work}{}% 42
-\BOOKMARK [1][-]{section.8}{Conclusions}{}% 43
-\BOOKMARK [1][-]{section.9}{Credits}{}% 44
-\BOOKMARK [1][-]{section.10}{References}{}% 45
+\BOOKMARK [2][-]{subsection.3.2}{Considerations}{section.3}% 7
+\BOOKMARK [2][-]{subsection.3.3}{Implementation}{section.3}% 8
+\BOOKMARK [2][-]{subsection.3.4}{Computation Platform}{section.3}% 9
+\BOOKMARK [3][-]{subsubsection.3.4.1}{Data Interface}{subsection.3.4}% 10
+\BOOKMARK [3][-]{subsubsection.3.4.2}{Multithreading on Software}{subsection.3.4}% 11
+\BOOKMARK [2][-]{subsection.3.5}{Kernel Instantiation}{section.3}% 12
+\BOOKMARK [3][-]{subsubsection.3.5.1}{Finite State Machine}{subsection.3.5}% 13
+\BOOKMARK [1][-]{section.4}{Proposed Solutions: White balance}{}% 14
+\BOOKMARK [2][-]{subsection.4.1}{Block diagram}{section.4}% 15
+\BOOKMARK [2][-]{subsection.4.2}{Algorithm}{section.4}% 16
+\BOOKMARK [2][-]{subsection.4.3}{Initialization}{section.4}% 17
+\BOOKMARK [2][-]{subsection.4.4}{Parallel method1: Pthread}{section.4}% 18
+\BOOKMARK [2][-]{subsection.4.5}{Parallel method2: Pthread\137TDM}{section.4}% 19
+\BOOKMARK [2][-]{subsection.4.6}{Parallel method3: OpenMP\137TDM}{section.4}% 20
+\BOOKMARK [2][-]{subsection.4.7}{Parallel method4: CUDA}{section.4}% 21
+\BOOKMARK [2][-]{subsection.4.8}{Parallel method5: CUDA\137TDM}{section.4}% 22
+\BOOKMARK [2][-]{subsection.4.9}{Parallel method6: Pthread\137with\137TaskParallel}{section.4}% 23
+\BOOKMARK [1][-]{section.5}{Experimental Methodology}{}% 24
+\BOOKMARK [2][-]{subsection.5.1}{Environment specifications}{section.5}% 25
+\BOOKMARK [2][-]{subsection.5.2}{Input datasets}{section.5}% 26
+\BOOKMARK [3][-]{subsubsection.5.2.1}{Lightup \046 Lightup2:}{subsection.5.2}% 27
+\BOOKMARK [3][-]{subsubsection.5.2.2}{Lightup2.5:}{subsection.5.2}% 28
+\BOOKMARK [3][-]{subsubsection.5.2.3}{White balance:}{subsection.5.2}% 29
+\BOOKMARK [2][-]{subsection.5.3}{Output}{section.5}% 30
+\BOOKMARK [3][-]{subsubsection.5.3.1}{Lightup \046 Lightup2:}{subsection.5.3}% 31
+\BOOKMARK [3][-]{subsubsection.5.3.2}{Lightup2.5:}{subsection.5.3}% 32
+\BOOKMARK [3][-]{subsubsection.5.3.3}{White balance:}{subsection.5.3}% 33
+\BOOKMARK [1][-]{section.6}{Experimental Results}{}% 34
+\BOOKMARK [2][-]{subsection.6.1}{Lightup}{section.6}% 35
+\BOOKMARK [2][-]{subsection.6.2}{Lightup2}{section.6}% 36
+\BOOKMARK [2][-]{subsection.6.3}{Lightup2.5 \(FPGA\)}{section.6}% 37
+\BOOKMARK [2][-]{subsection.6.4}{pmbw - Parallel Memory Bandwidth Benchmark / Measurement}{section.6}% 38
+\BOOKMARK [2][-]{subsection.6.5}{White balance}{section.6}% 39
+\BOOKMARK [2][-]{subsection.6.6}{White balance and more threads}{section.6}% 40
+\BOOKMARK [2][-]{subsection.6.7}{White balance and other platforms}{section.6}% 41
+\BOOKMARK [2][-]{subsection.6.8}{White balance Profiling results}{section.6}% 42
+\BOOKMARK [2][-]{subsection.6.9}{White balance when output is accounted}{section.6}% 43
+\BOOKMARK [1][-]{section.7}{Related work}{}% 44
+\BOOKMARK [1][-]{section.8}{Conclusions}{}% 45
+\BOOKMARK [1][-]{section.9}{Endnotes}{}% 46
+\BOOKMARK [1][-]{section.10}{References}{}% 47
