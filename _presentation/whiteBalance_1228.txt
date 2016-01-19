@@ -1,0 +1,18 @@
+lnishan@DESKTOP-69E6675:/cygdrive/d/GitHub/parallel_analysis/whiteBalance$ ./video_sequential.exe ../videoLarge.mp4
+OpenCV: FFMPEG: tag 0x56555969/'iYUV' is not supported with codec id 14 and format 'avi / AVI (Audio Video Interleaved)'
+    Total: 5843.000000ms (include time count)
+    Input: 4248.000000ms
+   Output: 879.000000ms
+Calculate: 716.000000ms
+lnishan@DESKTOP-69E6675:/cygdrive/d/GitHub/parallel_analysis/whiteBalance$ ./video_pthread_TDM.exe ../videoLarge.mp4 4
+OpenCV: FFMPEG: tag 0x56555969/'iYUV' is not supported with codec id 14 and format 'avi / AVI (Audio Video Interleaved)'
+    Total: 10876.000000ms (include time count)
+    Input: 4422.000000ms
+   Output: 984.000000ms
+Calculate: 5345.000000ms
+lnishan@DESKTOP-69E6675:/cygdrive/d/GitHub/parallel_analysis/whiteBalance$ ./video_openmp_TDM.exe ../videoLarge.mp4 4
+OpenCV: FFMPEG: tag 0x56555969/'iYUV' is not supported with codec id 14 and format 'avi / AVI (Audio Video Interleaved)'
+    Total: 6281.000000ms (include time count)
+    Input: 4437.000000ms
+   Output: 953.000000ms
+Calculate: 891.000000ms
