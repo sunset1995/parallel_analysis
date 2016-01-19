@@ -38,8 +38,8 @@ Video processing typically requires immense amounts of computational resources. 
 Initially, we were interested in whether parallelizing simple image processing tasks could deliver any speedup. A number of image processing tasks rely on matrix multiplications which take only constant number of computations per pixel. This gives O(N) complexity and likely higher memory access frequencies. \\
 Seeing these computations are reasonably simple, we suspected that compilers might optimize programs to an extent where speeding up with parallelization might not be possible. To test this out, we designed and conducted 2 experiments, Lightup and Lightup2. The former does simple arimetic calculations on each pixel, while the latter multiplies each pixel by \(1.125^{(x+y)/128}\). From these experiments, we concluded that increasing the amount of computations per thread does raise speedups and that different platforms(or OSes) along with different optimization options are not the reasons for the subtle speedups in Lightup. \\
 Our research into parallel video processing branched out from here. We decided to have a closer look at the feasibility of using FPGAs to speedup video processing. We consider FPGAs a suitable choice for heterogeneous computing because FPGAs are essentially massively parallel processors. Fully customized hardware designs can lead to maximized optimization. In the end, we were able to obtain nearly 1000x speedup on a 1920*1080 dataset. This was also 100x faster than other approaches. \\
-Unsatisfied with Lightup experiments, we've found and tested a tool called pmbw - Parallel Memory Bandwidth Benchmark / Measurement. It's a tool written in assembly that tests important memory characteristics including maximum bandwidth on our test platforms. After examining the test results from pmbw, we believed a speedup of up to 3.2x should be attainable. \\
-We then turned our attention to real-world problems. We decided to use White balance as our video processing application. The White balance algorithm we used takes O(N) time and was simple enough for us to experiment with. We used 5 different parallelization approaches: Pthread\_TDM, OpenMP\_TDM, CUDA, CUDA\_TDM and TaskParallel (We will detail these approaches in later contexts). While CUDA still delivers poor results due to frequent global memory accesses, Pthread and OpenMP managed to yield 3x speedups on the main test platform and 2x speedups on the secondary test platform. Both numbers were consistent with the test results from pmbw. We concluded that certain hardware characteristics do pose an "invisible ceiling" especially in I/O bound applications and CUDA on consumer-grade GPUs might not be suitable for this type of applications.
+Unsatisfied with Lightup experiments, we've found and tested a tool called pmbw - Parallel Memory Bandwidth Benchmark / Measurement \cite{pmbw}. It's a tool written in assembly that tests important memory characteristics including maximum bandwidth on our test platforms. After examining the test results from pmbw, we believed a speedup of up to 3.2x should be attainable. \\
+We then turned our attention to real-world problems. We decided to use White balance as our video processing application. The White balance algorithm \cite{gray_world} we used takes O(N) time and was simple enough for us to experiment with. We used 5 different parallelization approaches: Pthread\_TDM, OpenMP\_TDM, CUDA, CUDA\_TDM and TaskParallel (We will detail these approaches in later contexts). While CUDA still delivers poor results due to frequent global memory accesses, Pthread and OpenMP managed to yield 3x speedups on the main test platform and 2x speedups on the secondary test platform. Both numbers were consistent with the test results from pmbw. We concluded that certain hardware characteristics do pose an "invisible ceiling" especially in I/O bound applications and CUDA on consumer-grade GPUs might not be suitable for this type of applications.
 
 \section{Proposed Solutions: Lightup series (CPU/GPU)}
 \subsection{Lightup}
@@ -59,7 +59,7 @@ For each pixel, \([R', G', B'] = [R, G, B] * 1.125^{1024}\)
 \subsection{Considerations}
 The performance of the circuit is highly dependent on the quality of the circuit design and the available resources on the FPGA development board. Although some EDA (electronic design automation) tools, like Xilinx SDAccel, support high-level synthesis that can convert OpenCL C/C++ codes into schematics, these techniques are not mature enough, and may lead to poor performance.
 \subsection{Implementation}
-We employ RTL (register-transfer level) design by the Verilog HDL (hardware description language), and we use the Xillybus IP core [2] for data transmission over the PCIe interface. Our targeted board is Xilinx Virtex-5 ML506 Evaluation Platform. We use C++ for software design. The host programs run on a 64-bit Linux.
+We employ RTL (register-transfer level) design by the Verilog HDL (hardware description language), and we use the Xillybus IP core \cite{fpga_ref} for data transmission over the PCIe interface. Our targeted board is Xilinx Virtex-5 ML506 Evaluation Platform. We use C++ for software design. The host programs run on a 64-bit Linux.
 \begin{figure}[H]
   \includegraphics[width=\linewidth,natwidth=600,natheight=984]{fpga_connect.jpg}
   \label{fig:fpga_connect}
@@ -139,7 +139,7 @@ Extended from Pthread\_TDM, rather than waiting for Input and Calculate to finis
 APIs: OpenCV 2.4.11, OpenCV 3.0 \\
 \begin{table}[H]
 \centering
-\begin{tabular}{|c|c|c|c|} \hline
+\begin{tabular}{|l|l|l|l|} \hline
 OS&CPU&RAM&Compiler\\ \hline
 Windows 10 & i7-3770(4C8T) & 16GB & VS12, gcc 5.2.0 \\ \hline
 Ubuntu 14.04 & i5-4200H(2C4T) & 8GB & gcc 4.8.4 \\ \hline
@@ -150,7 +150,7 @@ Ubuntu 15.10 & 2 vCores & 2GB & gcc 5.2.0 \\ \hline
 GPU (on i7 PC): GeForce GTX 670, CUDA v7.5, CUDA Capability 3.0. \\
 \\
 FPGA Board: Xilinx Virtex-5 ML506 Evaluation Platform. \\
-FPGA Host PC: Ubuntu 14.04, i5-3570(4C4T), 8GB, gcc 4.8.4.
+FPGA Host PC: Ubuntu 14.04, i5-3570(4C4T), 8GB, gcc 5.3.0.
 \subsection{Input datasets}
 \subsubsection{Lightup \& Lightup2:}
  360*240 / 1280*720 / 1920*1080, 148 frames (MP4). \\
@@ -161,7 +161,7 @@ FPGA Host PC: Ubuntu 14.04, i5-3570(4C4T), 8GB, gcc 4.8.4.
 
 \subsection{Output}
 \subsubsection{Lightup \& Lightup2:}
-During visual inspection, the programs display output video in realtime.
+During visual inspection, the programs display the output video in realtime.
 \subsubsection{Lightup2.5:}
 Raw data (arrays) of sizes 256*256 / 1920*1080*3.
 \subsubsection{White balance:}
@@ -186,7 +186,7 @@ Slowdown when input is small. Tiny speedup even when input is large. Similar res
   \label{fig:lightup_osx}
 \end{figure}
 \subsection{Lightup2}
-Results are clearly better. Time Division seems to be better than Frame Division.
+The results are clearly better than Lightup. Pthread\_TDM seems to be better than Pthread.
 \begin{figure}[H]
   \includegraphics[width=\linewidth,natwidth=526,natheight=282]{lightup2.png}
   \caption{Lightup2 (4 Threads, i7-3770, OpenCV3, VS12, Windows 10)}
@@ -204,7 +204,7 @@ Results are clearly better. Time Division seems to be better than Frame Division
 \end{figure}
 
 \subsection{Lightup2.5 (FPGA)}
-A whopping, near 1000x speedup is observed.
+Whopping speedups. FPGA is at least 100x faster than other methods.
 \begin{table}[H]
 \centering
 \caption{Lightup2.5 Runtimes}
@@ -241,12 +241,14 @@ From the results below, we conclude that I/O should be parallelization-worthy (i
   \caption{White balance Results: Before and After}
   \label{fig:whitebalance_comparison}
 \end{figure}
-2 Threads, i7-3770, 16GB, VS12, Windows 10: \\
+\textbf{2 Threads}, i7-3770, VS12, Windows 10: \\
 Pthread\_TDM: 1.69x speedup \\
-OpenMP\_TDM: 1.77x speedup
+OpenMP\_TDM: 1.77x speedup \\
+CUDA: 0.80x slowdown \\
+CUDA\_TDM: 0.41x slowdown
 \begin{figure}[H]
   \includegraphics[width=\linewidth,natwidth=569,natheight=299]{white2.png}
-  \caption{2 Threads, i7-3770, 16GB, VS12, Windows 10}
+  \caption{2 Threads, i7-3770, VS12, Windows 10}
   \label{fig:white2}
 \end{figure}
 \subsection{White balance and more threads}
@@ -289,9 +291,17 @@ OpenMP\_TDM & 1.00x & 1.76x & 1.27x & 3.20x \\ \hline
 
 \subsection{White balance Profiling results}
 When output is taken into account, the whole process is output-bound.
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|l|l|l|} \hline
+Method&Total&Input&Calculate&Output\\ \hline
+Sequential & 100\% & 29.41\% & 11.59\% & \textbf{59.00\%} \\ \hline
+OpenMP & 100\% & 21.66\% & 7.29\% & \textbf{71.04\%} \\ \hline
+\end{tabular}
+\end{table}
 \begin{figure}[H]
   \includegraphics[width=\linewidth,natwidth=757,natheight=395]{profile.png}
-  \caption{Profiling results}
+  \caption{Profiling results (NB)}
   \label{fig:profile}
 \end{figure}
 
@@ -334,15 +344,15 @@ Pthread\_with\_TaskParallel delivers better results(ie. higher efficiency) when 
 \end{itemize}
 
 \begin{thebibliography}{9}
-\bibitem{gray_world} 
-Jason Su.
-Illuminant Estimation: Gray World. 
-Available at \url{http://web.stanford.edu/~sujason/ColorBalancing/grayworld.html}
-
 \bibitem{pmbw}
-Timo Bingmann.
+Timo Bingmann. (2013).
 pmbw - Parallel Memory Bandwidth Benchmark / Measurement.
 Available at \url{http://panthema.net/2013/pmbw/}
+
+\bibitem{gray_world} 
+Jason Su. (2010).
+Illuminant Estimation: Gray World. 
+Available at \url{http://web.stanford.edu/~sujason/ColorBalancing/grayworld.html}
 
 \bibitem{fpga_ref} 
 Xillybus Ltd. (2016).
