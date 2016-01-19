@@ -1,9 +1,13 @@
-# parallel_analysis
-Parallel final research project
+# Parallel Video Processing
+Parallel Programming (Fall 2015) Final Project
+
+Quick links:
+[Presentation](https://github.com/sunset1995/parallel_analysis/blob/master/_presentation/Group9_Parallel-Video-Processing.pdf)
+[Final Report](https://github.com/sunset1995/parallel_analysis/blob/master/_report/Group9_Parallel-Video-Processing.pdf)
 
 ## Results
 ### 01/03/2016
-Tested environment: Win 10 x64. i7-3770, 16GB, GTX670. VS12
+Tested environment: 4 Threads, i7-3770, 16GB, GTX670. VS12, Windows 10
 
 **Sequential**
 ```
@@ -54,7 +58,7 @@ Calculate: 15.244s
 ```
 
 ### 01/03/2016
-Tested environment: Ubuntu 14.04 LTS, i5-4200 2.8GHz*4, 8GB
+Tested environment: 2 to 4 Threads, i5-4200H, 8GB, Ubuntu 14.04
 
 Testdata: 720*1280, 1421 frames
 
